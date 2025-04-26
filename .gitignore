@@ -1,0 +1,31 @@
+# IDE Files (mostly)
+.idea/*
+!/.idea/scopes/
+!/.idea/copyright/
+*.iml
+.settings
+.project
+.classpath
+
+# Local instance configs w/secrets
+musiclub.yml
+.env
+
+# Compiled source
+.gradle/
+build/
+bin/
+out/
+node_modules/
+/client-app/build/
+/client-app/tsconfig.tsbuildinfo
+
+# Logs
+musiclub-logs/
+*.log
+
+# OS generated files
+.DS_Store
+.DS_Store?
+ehthumbs.db
+Thumbs.db

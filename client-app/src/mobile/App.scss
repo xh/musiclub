@@ -1,0 +1,51 @@
+.xh-app {
+  --appbar-bg: var(--xh-bg);
+  --appbar-title-color: var(--xh-text-color);
+  --button-active-bg: var(--xh-orange);
+  --tbar-bg: var(--xh-bg);
+  --grid-group-bg: var(--xh-intent-warning);
+  --grid-group-text-color: white;
+
+  &:not(.xh-dark) {
+    //--grid-group-bg: var(--xh-text-color);
+    //--grid-group-text-color: var(--xh-bg);
+    --text-color: #494949;
+  }
+
+  .xh-appbar-title {
+    text-transform: uppercase;
+  }
+
+  .xh-appbar.xh-toolbar .xh-button .fa-turntable {
+    color: var(--xh-orange);
+  }
+
+  .xh-placeholder {
+    font-family: var(--xh-font-family-mono);
+  }
+
+  .xh-button {
+    text-transform: uppercase;
+  }
+
+  .ag-full-width-row {
+    text-transform: uppercase;
+  }
+
+  h1 {
+    font-weight: 200;
+    margin: 0 !important;
+  }
+
+  h2 {
+    font-size: 20px;
+    font-weight: 200;
+    margin: 0 !important;
+    text-transform: uppercase;
+  }
+
+  p {
+    margin: 4px 0;
+    text-transform: uppercase;
+  }
+}
