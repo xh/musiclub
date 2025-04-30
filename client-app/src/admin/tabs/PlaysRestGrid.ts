@@ -1,5 +1,5 @@
 import {AppModel} from '@xh/hoist/admin/AppModel';
-import {ColumnRenderer, ColumnSpec} from '@xh/hoist/cmp/grid';
+import {boolCheckCol, ColumnRenderer, ColumnSpec} from '@xh/hoist/cmp/grid';
 import {a} from '@xh/hoist/cmp/layout';
 import {creates, hoistCmp, HoistModel, LoadSpec, managed, PlainObject, XH} from '@xh/hoist/core';
 import {RecordActionSpec, Store} from '@xh/hoist/data';
@@ -17,6 +17,7 @@ import {RestField} from '@xh/hoist/desktop/cmp/rest/data/RestField';
 import {Icon} from '@xh/hoist/icon';
 import {MINUTES} from '@xh/hoist/utils/datetime';
 import {kebabCase} from 'lodash';
+import {albumIcon} from '../../core/Icons';
 
 export const playsRestGrid = hoistCmp.factory({
     model: creates(() => SongPlayRestGridModel),
@@ -39,56 +40,86 @@ class SongPlayRestGridModel extends HoistModel {
 
         this.gridModel = new RestGridModel({
             readonly: AppModel.readonly,
+            colChooserModel: true,
             enableExport: true,
             selModel: 'multiple',
             store: {
                 url: 'rest/playsAdmin',
                 reloadLookupsOnLoad: true,
                 processRawData: raw => {
+                    const artistMb = this.lookupVal(raw, 'artistMbId'),
+                        releaseGroupMb = this.lookupVal(raw, 'releaseGroupMbId'),
+                        releaseMb = this.lookupVal(raw, 'releaseMbId'),
+                        recordingMb = this.lookupVal(raw, 'recordingMbId');
                     return {
                         ...raw,
-                        artistMb: this.lookupVal(raw, 'artistMbId'),
-                        releaseGroupMb: this.lookupVal(raw, 'releaseGroupMbId'),
-                        releaseMb: this.lookupVal(raw, 'releaseMbId'),
-                        recordingMb: this.lookupVal(raw, 'recordingMbId')
+                        artistMb,
+                        artistMatch: raw.artist && raw.artist === artistMb,
+                        releaseGroupMb,
+                        releaseMb,
+                        albumMatch: raw.album && raw.album === releaseMb,
+                        recordingMb,
+                        titleMatch: raw.title && raw.title === recordingMb
                     };
                 },
                 fields: [
                     {name: 'slug', type: 'string', required: true},
                     {name: 'meeting', lookupName: 'meetings', type: 'number'},
-                    {name: 'member', type: 'string'},
+                    {
+                        name: 'member',
+                        type: 'string',
+                        lookupName: 'members',
+                        enableCreate: true
+                    },
+                    {
+                        name: 'mbStatus',
+                        displayName: 'MB Match Status',
+                        type: 'string',
+                        lookupName: 'mbStatuses'
+                    },
                     {name: 'artist', displayName: 'Artist (orig)', type: 'string'},
                     {name: 'artistMb', displayName: 'Artist (MB)', type: 'string'},
+                    {name: 'artistMatch', type: 'bool'},
                     {
                         name: 'artistMbId',
                         displayName: 'Artist (MB)',
+                        type: 'string',
                         lookupName: 'artists',
-                        enableCreate: true,
-                        type: 'string'
+                        enableCreate: true
                     },
+                    {name: 'albumMatch', type: 'bool'},
                     {name: 'album', displayName: 'Album (orig)', type: 'string'},
                     {name: 'releaseGroupMb', displayName: 'Release Group (MB)', type: 'string'},
 
                     {
                         name: 'releaseGroupMbId',
                         displayName: 'Release Group (MB)',
+                        type: 'string',
                         lookupName: 'releaseGroups',
-                        type: 'string'
+                        enableCreate: true
                     },
                     {name: 'releaseMb', displayName: 'Release (MB)', type: 'string'},
                     {
                         name: 'releaseMbId',
                         displayName: 'Release (MB)',
+                        type: 'string',
                         lookupName: 'releases',
-                        enableCreate: true,
-                        type: 'string'
+                        enableCreate: true
                     },
+                    {name: 'titleMatch', type: 'bool'},
                     {name: 'title', displayName: 'Title (orig)', type: 'string'},
                     {name: 'recordingMb', displayName: 'Recording (MB)', type: 'string'},
                     {
                         name: 'recordingMbId',
                         displayName: 'Title (MB)',
+                        type: 'string',
                         lookupName: 'recordings',
+                        enableCreate: true
+                    },
+                    {name: 'coverArtUrl', displayName: 'Cover Art', type: 'string'},
+                    {
+                        name: 'coverArtThumbUrl',
+                        displayName: 'Cover Art (Thumbmail)',
                         type: 'string'
                     },
                     {name: 'bonus', type: 'bool', defaultValue: false},
@@ -108,20 +139,35 @@ class SongPlayRestGridModel extends HoistModel {
                     align: 'center',
                     renderer: v => (v ? Icon.checkCircle({intent: 'success'}) : '')
                 },
+                {field: 'mbStatus'},
+                {field: 'artistMatch', ...boolCheckCol, width: 100},
                 {field: 'artist'},
                 {field: 'artistMb', ...mbCol},
+                {field: 'albumMatch', ...boolCheckCol, width: 100},
                 {field: 'album'},
                 {field: 'releaseGroupMb', ...mbCol},
                 {field: 'releaseMb', ...mbCol},
+                {field: 'titleMatch', ...boolCheckCol, width: 100},
                 {field: 'title'},
                 {field: 'recordingMb', ...mbCol},
-                {field: 'notes'}
+                {
+                    field: 'coverArtUrl',
+                    filterable: false,
+                    renderer: v => (v ? a({item: v, href: v, target: '_blank'}) : '')
+                },
+                {
+                    field: 'coverArtThumbUrl',
+                    filterable: false,
+                    renderer: v => (v ? a({item: v, href: v, target: '_blank'}) : '')
+                },
+                {field: 'notes', filterable: false}
             ],
             editors: [
                 {field: 'slug'},
                 {field: 'meeting'},
                 {field: 'member'},
                 {field: 'bonus'},
+                {field: 'mbStatus'},
                 {field: 'artist'},
                 {field: 'artistMbId'},
                 {field: 'album'},
@@ -129,6 +175,8 @@ class SongPlayRestGridModel extends HoistModel {
                 {field: 'releaseMbId'},
                 {field: 'title'},
                 {field: 'recordingMbId'},
+                {field: 'coverArtUrl'},
+                {field: 'coverArtThumbUrl'},
                 {field: 'notes', formField: {item: textArea({height: 150})}}
             ],
             emptyText: 'No plays found...',
@@ -137,7 +185,11 @@ class SongPlayRestGridModel extends HoistModel {
                 editAction,
                 deleteAction,
                 this.enhancePlayAction,
-                this.reEnhancePlayAction
+                this.reEnhancePlayAction,
+                this.addCoverArtAction,
+                this.acceptMbEntitiesAction,
+                this.markAsMismatchAction,
+                this.markAsMismatchKeepArtistAction
             ],
             menuActions: [
                 addAction,
@@ -146,7 +198,13 @@ class SongPlayRestGridModel extends HoistModel {
                 deleteAction,
                 '-',
                 this.enhancePlayAction,
-                this.reEnhancePlayAction
+                this.reEnhancePlayAction,
+                this.addCoverArtAction,
+                '-',
+                this.acceptMbEntitiesAction,
+                '-',
+                this.markAsMismatchAction,
+                this.markAsMismatchKeepArtistAction
             ]
         });
     }
@@ -155,9 +213,12 @@ class SongPlayRestGridModel extends HoistModel {
         await this.gridModel.loadAsync(loadSpec);
     }
 
+    //------------------
+    // Actions
+    //------------------
     enhancePlayAction: RecordActionSpec = {
-        icon: Icon.magic(),
         text: 'Enhance',
+        icon: Icon.magic(),
         disabled: AppModel.readonly,
         recordsRequired: true,
         actionFn: ({selectedRecords}) => {
@@ -169,7 +230,6 @@ class SongPlayRestGridModel extends HoistModel {
     };
 
     reEnhancePlayAction: RecordActionSpec = {
-        icon: Icon.magic(),
         text: 'Enhance (replace all existing MB IDs)',
         disabled: AppModel.readonly,
         recordsRequired: true,
@@ -184,12 +244,109 @@ class SongPlayRestGridModel extends HoistModel {
     async enhancePlays(ids: number[], ignoreCurrent: boolean) {
         try {
             const results = await XH.postJson({
-                url: 'musiclubSongPlay/enhancePlays',
+                url: 'playsAdmin/enhanceMany',
                 body: {ids, ignoreCurrent},
                 timeout: 5 * MINUTES
             }).linkTo({
                 observer: this.loadModel,
                 message: 'Enhancing plays...'
+            });
+
+            console.log(results);
+            await this.refreshAsync();
+        } catch (e) {
+            XH.handleException(e);
+        }
+    }
+
+    acceptMbEntitiesAction: RecordActionSpec = {
+        icon: Icon.checkCircle(),
+        text: 'Accept MB names/titles',
+        disabled: AppModel.readonly,
+        recordsRequired: true,
+        actionFn: ({selectedRecords}) => {
+            this.acceptMbEntities(selectedRecords.map(it => it.id as number));
+        }
+    };
+
+    async acceptMbEntities(ids: number[]) {
+        try {
+            const results = await XH.postJson({
+                url: 'playsAdmin/acceptMany',
+                body: {ids}
+            }).linkTo({
+                observer: this.loadModel,
+                message: 'Accepting MB names/titles...'
+            });
+
+            console.log(results);
+            await this.refreshAsync();
+        } catch (e) {
+            XH.handleException(e);
+        }
+    }
+
+    markAsMismatchAction: RecordActionSpec = {
+        icon: Icon.slashedCircle(),
+        text: 'Mark as mismatch',
+        disabled: AppModel.readonly,
+        recordsRequired: true,
+        actionFn: ({selectedRecords}) => {
+            this.markAsMismatch(
+                selectedRecords.map(it => it.id as number),
+                false
+            );
+        }
+    };
+
+    markAsMismatchKeepArtistAction: RecordActionSpec = {
+        text: 'Mark as mismatch (keep artist)',
+        disabled: AppModel.readonly,
+        recordsRequired: true,
+        actionFn: ({selectedRecords}) => {
+            this.markAsMismatch(
+                selectedRecords.map(it => it.id as number),
+                true
+            );
+        }
+    };
+
+    async markAsMismatch(ids: number[], keepArtist: boolean) {
+        try {
+            const results = await XH.postJson({
+                url: 'playsAdmin/markAsMismatch',
+                body: {ids, keepArtist}
+            }).linkTo({
+                observer: this.loadModel,
+                message: 'Marking plays as mismatch...'
+            });
+
+            console.log(results);
+            await this.refreshAsync();
+        } catch (e) {
+            XH.handleException(e);
+        }
+    }
+
+    addCoverArtAction: RecordActionSpec = {
+        text: 'Add cover art',
+        icon: albumIcon(),
+        disabled: AppModel.readonly,
+        recordsRequired: true,
+        actionFn: ({selectedRecords}) => {
+            this.addCoverArt(selectedRecords.map(it => it.id as number));
+        }
+    };
+
+    async addCoverArt(ids: number[]) {
+        try {
+            const results = await XH.postJson({
+                url: 'playsAdmin/addCoverArt',
+                body: {ids},
+                timeout: 5 * MINUTES
+            }).linkTo({
+                observer: this.loadModel,
+                message: 'Adding cover art...'
             });
 
             console.log(results);

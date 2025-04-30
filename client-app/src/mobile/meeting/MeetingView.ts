@@ -2,6 +2,7 @@ import {dataView} from '@xh/hoist/cmp/dataview';
 import {div, h1, h2, placeholder} from '@xh/hoist/cmp/layout';
 import {markdown} from '@xh/hoist/cmp/markdown';
 import {creates, hoistCmp} from '@xh/hoist/core';
+import {Icon} from '@xh/hoist/icon';
 import {panel} from '@xh/hoist/mobile/cmp/panel';
 import {MeetingModel} from './MeetingModel';
 import './Meeting.scss';
@@ -9,23 +10,23 @@ import './Meeting.scss';
 export const meetingView = hoistCmp.factory({
     displayName: 'MeetingView',
     model: creates(MeetingModel),
-    className: 'mc-meeting-view',
+    className: 'mc-meeting-view mc-detail-view',
 
-    render({model, id, className}) {
+    render({model, meetingSlug, className}) {
         const {meeting: mtg} = model;
-        if (!mtg) return placeholder(`Mystery meeting ID:${id} - unknown`);
+        if (!mtg) return placeholder(Icon.error(), `Unknown meeting [${meetingSlug}]`);
 
         return panel({
             className,
             items: [
                 div({
-                    className: 'mc-meeting-view__header',
+                    className: 'mc-detail-view__header',
                     items: [
                         h1(`#${mtg.slug} - ${mtg.year}`),
                         h2(mtg.location),
                         h2(mtg.date?.toString() ?? null),
                         div({
-                            className: 'mc-meeting-view__header__notes',
+                            className: 'mc-detail-view__header__notes',
                             item: markdown({content: mtg.notes}),
                             omit: !mtg.notes
                         })

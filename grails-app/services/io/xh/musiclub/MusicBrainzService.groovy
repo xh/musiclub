@@ -1,6 +1,8 @@
 package io.xh.musiclub
 
+import grails.compiler.GrailsCompileStatic
 import grails.gorm.transactions.Transactional
+import groovy.transform.CompileDynamic
 import groovy.transform.NamedParam
 import groovy.transform.NamedVariant
 import io.xh.hoist.BaseService
@@ -11,31 +13,51 @@ import org.apache.hc.core5.net.URIBuilder
 
 import static io.xh.hoist.util.Utils.isLocalDevelopment
 
+@GrailsCompileStatic
 class MusicBrainzService extends BaseService {
 
     private JSONClient _client
 
-    Map enhanceMeeting(Long id) {
+    Map<Long, ResResults> enhanceMeeting(Long id, boolean ignoreCurrent) {
         def mtg = Meeting.get(id)
         if (!mtg) throw new RuntimeException("No meeting found with ID $id")
 
-        logInfo("Enhancing meeting ${mtg.slug}", mtg.year, mtg.location, "${mtg.plays.size()} plays")
-        def ePlays = mtg.plays.collect {
-            try {
-                enhancePlay(it.id)
-            } catch (e) {
-                logError("Error enhancing play ID $it.id", it.formatForJSON(), e)
-            }
+        withInfo(["Enhancing meeting ${mtg.slug}", mtg.year, mtg.location, "${mtg.plays.size()} plays"]) {
+            enhancePlays(mtg.plays*.id, ignoreCurrent)
         }
-
-        return [
-            *    : mtg.formatForJSON(),
-            plays: ePlays
-        ]
     }
 
+    Map<Long, ResResults> enhancePlays(List<Long> ids, boolean ignoreCurrent, Integer minScore = 90) {
+        Map<Long, ResResults> ret = [:]
+        ids.each { id ->
+            try {
+                def res = enhancePlay(id, ignoreCurrent, minScore)
+                ret[id] = res
+            } catch (e) {
+                logError("Error enhancing play ID $id", e)
+                ret[id] = new ResResults(play: Play.get(id), error: e.message)
+            }
+        }
+        return ret
+    }
+
+    /**
+     * 0) Use artistName to find artist.
+     * 1) Use [album name, artist mbId, meeting year] to find release-group.
+     *    http://localhost:5000/ws/2/release-group/?fmt=json&query=release:unrest%20AND%20arid:6ba2f6ce-50be-47df-b5a3-298ef032f476%20AND%20firstreleasedate:1974
+     * 2) Use [rgId, meeting year] to find release - could also do status:Official.
+     *    http://localhost:5000/ws/2/release/?fmt=json&query=rgid:d1fac684-703d-3fed-90f6-24ef55aca4ae%20AND%20date:1974
+     * 2a) Browse release-group, including releases.
+     *    http://localhost:5000/ws/2/release-group/d1fac684-703d-3fed-90f6-24ef55aca4ae?fmt=json&inc=releases
+     * 3) Use [releaseId, track title] to find recording.
+     *    http://localhost:5000/ws/2/recording/?fmt=json&query=reid:ad485e54-8780-4a66-9429-14dbdee258c5%20AND%20recording:Bittern%20Storm%20Over%20Ulm
+     * 3a) Browse release, including recordings.
+     *    http://localhost:5000/ws/2/release/ad485e54-8780-4a66-9429-14dbdee258c5?fmt=json&inc=recordings
+     * 4) TODO: Browse recording, including ISRCs.
+     *    http://localhost:5000/ws/2/recording/b37797ec-f3cc-4797-a229-9826d49f939e?fmt=json&inc=isrcs
+     */
     @Transactional
-    ResResults enhancePlay(Long id, boolean ignoreCurrent, int minScore = 90) {
+    ResResults enhancePlay(Long id, boolean ignoreCurrent, Integer minScore = 90) {
         def play = Play.get(id)
 
         if (!play) {
@@ -55,24 +77,137 @@ class MusicBrainzService extends BaseService {
         if (releaseResults.error) return releaseResults
 
         return resolveRecording(play, ignoreCurrent, minScore).withPriorResults(releaseResults)
+    }
 
-        // 0)  use artistName to find artist
 
-        // 1)  use [album name, artist mbId, meeting year] to find release-group
-        //     http://localhost:5000/ws/2/release-group/?fmt=json&query=release:unrest%20AND%20arid:6ba2f6ce-50be-47df-b5a3-298ef032f476%20AND%20firstreleasedate:1974
+    //------------------
+    // Match acceptance / clearing
+    //------------------
+    @Transactional
+    void markAsMismatch(List<Long> playIds, Boolean keepArtist) {
+        playIds.each {
+            def play = Play.get(it)
+            play.mbStatus = 'MISMATCH'
 
-        // 2)  use [rgId, meeting year] to find release - could also do status:Official
-        //     http://localhost:5000/ws/2/release/?fmt=json&query=rgid:d1fac684-703d-3fed-90f6-24ef55aca4ae%20AND%20date:1974
-        // 2a) Browse release-group, inc releases
-        //     http://localhost:5000/ws/2/release-group/d1fac684-703d-3fed-90f6-24ef55aca4ae?fmt=json&inc=releases
+            if (!keepArtist) play.artistMbId = null
+            play.releaseGroupMbId = null
+            play.releaseMbId = null
+            play.recordingMbId = null
 
-        // 3)  use [releaseId, track title] to find recording
-        //     http://localhost:5000/ws/2/recording/?fmt=json&query=reid:ad485e54-8780-4a66-9429-14dbdee258c5%20AND%20recording:Bittern%20Storm%20Over%20Ulm
-        // 3a) browse release, inc recordings
-        //     http://localhost:5000/ws/2/release/ad485e54-8780-4a66-9429-14dbdee258c5?fmt=json&inc=recordings
+            play.save()
+        }
+    }
 
-        // 4) browse recording, inc isrcs
-        //    http://localhost:5000/ws/2/recording/b37797ec-f3cc-4797-a229-9826d49f939e?fmt=json&inc=isrcs
+    @Transactional
+    List<Map> acceptMbEntities(List<Long> playIds) {
+        List<Map> ret = []
+        playIds.each {
+            def play = Play.get(it),
+                accepted = [],
+                error = null
+
+            if (play.mbStatus == 'MISMATCH') {
+                error = "mbStatus is MISMATCH - skipped"
+                logWarn([playId: it, _msg: error])
+                ret << [play: play, error: error]
+                return
+            }
+
+            ['artist', 'release', 'recording'].each { entityType ->
+                if (error) return
+
+                def result = acceptMbEntity(play, entityType)
+                if (result.error) {
+                    logWarn([playId: it, _msg: result.error])
+                    error = result.error
+                } else {
+                    logInfo([playId: it, _msg: "Accepted $entityType:${result.entityName}"])
+                    accepted << entityType
+                }
+            }
+
+            if (!accepted) {
+                play.mbStatus = 'UNMATCHED'
+            } else if (error) {
+                play.mbStatus = 'PARTIALLY_MATCHED'
+            } else {
+                play.mbStatus = 'MATCHED'
+            }
+            play.save()
+
+            ret << [play: play, accepted: accepted, error: error]
+        }
+
+        return ret
+    }
+
+    @Transactional
+    List<Play> addCoverArt(List<Long> ids) {
+        return ids.collect {addCoverArt(it)}
+    }
+
+    @Transactional
+    Play addCoverArt(Long playId) {
+        withInfo("Adding cover art for play $playId") {
+            def play = Play.get(playId),
+                foundArt = false
+
+            if (play.releaseMbId) {
+                def urls = getCoverArt(play.releaseMbId, 'release')
+                if (urls.coverArtUrl) {
+                    play.coverArtUrl = urls.coverArtUrl
+                    play.coverArtThumbUrl = urls.coverArtThumbUrl
+                    foundArt = true
+                }
+            }
+
+            if (!foundArt && play.releaseGroupMbId) {
+                def urls = getCoverArt(play.releaseGroupMbId, 'release-group')
+                if (urls.coverArtUrl) {
+                    play.coverArtUrl = urls.coverArtUrl
+                    play.coverArtThumbUrl = urls.coverArtThumbUrl
+                    foundArt = true
+                }
+            }
+
+            if (foundArt) play.save(flush: true)
+            return play
+        }
+    }
+
+    //------------------
+    // Entity Mgmt
+    //------------------
+    @Transactional Map refreshMbEntities(List<Long> entityIds) {
+        List<Long> refreshed = []
+        Map<Long, String> errors = [:]
+
+        entityIds.each {id ->
+            try {
+                def mbEntity = MbEntity.get(id)
+                if (mbEntity) {
+                    refreshed.add(refreshMbEntity(mbEntity).id)
+                } else {
+                    logWarn("No MB entity found with ID $id")
+                    errors[id] = "Not found"
+                }
+            } catch (e) {
+                logError("Error refreshing MB entity ID $id", e)
+                errors[id] = e.message
+            }
+        }
+        return [refreshed: refreshed, errors: errors]
+    }
+
+    @Transactional
+    MbEntity refreshMbEntity(MbEntity mbEntity) {
+        Map raw = getRawEntityData(mbEntity.mbId, mbEntity.type)
+        String name = raw[mbEntity.type == 'artist' ? 'name' : 'title']
+        mbEntity.name = name
+        mbEntity.mbJson = JSONSerializer.serialize(raw)
+        mbEntity.save(flush: true)
+        logInfo("Refreshed ${mbEntity.type}:${mbEntity.mbId}", name)
+        mbEntity
     }
 
     @Transactional
@@ -95,8 +230,12 @@ class MusicBrainzService extends BaseService {
         getOrFetchAndCreateMbEntity(mbId, 'recording')
     }
 
+
+    //------------------
+    // Implementation
+    //------------------
     @Transactional
-    ResResults resolveArtist(Play play, boolean ignoreCurrent, Integer minScore) {
+    private ResResults resolveArtist(Play play, boolean ignoreCurrent, Integer minScore) {
         resolveEntity(
             play: play,
             entityType: 'artist',
@@ -108,7 +247,7 @@ class MusicBrainzService extends BaseService {
     }
 
     @Transactional
-    ResResults resolveReleaseGroup(Play play, boolean ignoreCurrent, Integer minScore) {
+    private ResResults resolveReleaseGroup(Play play, boolean ignoreCurrent, Integer minScore) {
         def ret = resolveEntity(
             play: play,
             entityType: 'releaseGroup',
@@ -118,7 +257,7 @@ class MusicBrainzService extends BaseService {
             },
             fallbackQueries: [
                 { Play p -> "release:${p.albumOrTitle} AND arid:${p.artistMbId}" },
-                { Play p -> "release:${p.albumOrTitle} AND artist:${p.artistName}" }
+                { Play p -> "release:${p.albumOrTitle} AND artist:${p.artist}" }
             ],
             minScore: minScore,
             ignoreCurrent: ignoreCurrent
@@ -132,13 +271,8 @@ class MusicBrainzService extends BaseService {
 
     }
 
-    Map getReleaseGroupCoverArtData(String mbId) {
-        def get = new HttpGet("https://coverartarchive.org/release-group/${mbId}")
-        client.executeAsMap(get)
-    }
-
     @Transactional
-    ResResults resolveRelease(Play play, boolean ignoreCurrent, Integer minScore) {
+    private ResResults resolveRelease(Play play, boolean ignoreCurrent, Integer minScore) {
         resolveEntity(
             play: play,
             entityType: 'release',
@@ -153,7 +287,7 @@ class MusicBrainzService extends BaseService {
     }
 
     @Transactional
-    ResResults resolveRecording(Play play, boolean ignoreCurrent, Integer minScore) {
+    private ResResults resolveRecording(Play play, boolean ignoreCurrent, Integer minScore) {
         resolveEntity(
             play: play,
             entityType: 'recording',
@@ -164,13 +298,41 @@ class MusicBrainzService extends BaseService {
         )
     }
 
+    @CompileDynamic
+    @Transactional
+    private Map getCoverArt(String mbId, String entityType) {
+        try {
+            def get = new HttpGet("https://coverartarchive.org/$entityType/${mbId}"),
+                resp = client.executeAsMap(get)
+
+            if (resp.images) {
+                // Look for the best front image
+                def img = resp.images.find { it.front && it.approved }
+                if (!img) img = resp.images.find { it.front }
+                if (img) {
+                    logInfo("Cover art found for $entityType $mbId")
+                    return [
+                        coverArtUrl     : img.image,
+                        coverArtThumbUrl: img.thumbnails?.large ?: img.thumbnails?.small ?: img.image
+                    ]
+                } else {
+                    logInfo("No cover art found for $entityType $mbId")
+                    return [coverArtUrl: null, coverArtThumbUrl: null]
+                }
+            }
+        } catch (e) {
+            logWarn("Error fetching cover art for $entityType $mbId", e)
+            return [coverArtUrl: null, coverArtThumbUrl: null]
+        }
+    }
+
     @NamedVariant
     private ResResults resolveEntity(
         @NamedParam Play play,
         @NamedParam String entityType,
         @NamedParam Collection<String> requiredProps,
-        @NamedParam Closure<Play> queryBuilder,
-        @NamedParam List<Closure<Play>> fallbackQueries,
+        @NamedParam Closure queryBuilder,
+        @NamedParam List<Closure> fallbackQueries,
         @NamedParam Integer minScore,
         @NamedParam boolean ignoreCurrent = false
     ) {
@@ -247,9 +409,9 @@ class MusicBrainzService extends BaseService {
             ret.possibleMatches = matches.take(5)
 
             def bestMatch = matches.first(),
-                bestScore = bestMatch.score,
+                bestScore = bestMatch.score as Integer,
             // Count as tie if within two points ("Phoenix" artist search)
-                ties = matches.findAll { it.score >= (bestScore - 2) },
+                ties = matches.findAll { (it.score as Integer) >= (bestScore - 2) },
                 tiedMatch = ties.size() > 1
 
             // Favor groups over people for artist matches
@@ -300,6 +462,7 @@ class MusicBrainzService extends BaseService {
     }
 
     // Create a MbEntity if needed from raw data that's already been acquired - eg from a search hit.
+    // TODO - review if we can get all the inc data from the search hit path vs direct fetch
     @Transactional
     private MbEntity getOrCreateMbEntity(Map raw, String type) {
         String id = raw.id
@@ -319,18 +482,59 @@ class MusicBrainzService extends BaseService {
         return ret
     }
 
-    private getRawEntityData(String mbId, String entityType) {
+    private Map getRawEntityData(String mbId, String entityType) {
         def mbType = entityType == 'releaseGroup' ? 'release-group' : entityType,
-            uri = buildUri("$mbType/$mbId"),
+            includes = getIncludes(entityType),
+            uri = buildUri("$mbType/$mbId", includes ? [inc: includes.join('+')] : null),
             ret = client.executeAsMap(new HttpGet(uri))
 
         if (ret.error) throw new RuntimeException("Error fetching $mbId from MB: ${ret.error}")
         return ret
     }
 
-    //------------------
-    // Implementation
-    //------------------
+    private List<String> getIncludes(String entityType) {
+        if (entityType == 'artist') return ['release-groups', 'artist-rels', 'url-rels']
+        if (entityType == 'release-group') return ['releases', 'url-rels']
+        if (entityType == 'release') return ['artists', 'recordings', 'isrcs', 'url-rels']
+        if (entityType == 'recording') return ['artists', 'isrcs', 'url-rels']
+        return []
+    }
+
+    @Transactional
+    private Map acceptMbEntity(Play play, String entityType) {
+        def mbIdField = "${entityType}MbId",
+            playField
+
+        switch (entityType) {
+            case 'artist':
+                playField = 'artist'
+                break
+            case 'release':
+                playField = 'album'
+                break
+            case 'recording':
+                playField = 'title'
+                break
+            default:
+                throw new RuntimeException("Unknown entity type $entityType")
+        }
+
+        def mbId = play[mbIdField] as String,
+            mbEntity = mbId ? MbEntity.findByMbId(mbId) : null
+
+        if (!mbEntity) {
+            return [
+                play : play,
+                error: mbId ? "No no $entityType found with MBID $mbId." : "Play $mbIdField not set"
+            ]
+        }
+
+        play[playField] = mbEntity.name
+        play.save()
+
+        return [play: play, entityName: play[playField]]
+    }
+
     private URI buildUri(String path, Map queryParams = [:]) {
         def uriBuilder = new URIBuilder("${baseApiUri}${path}")
 

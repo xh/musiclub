@@ -3,6 +3,7 @@ import {NavigatorModel} from '@xh/hoist/mobile/cmp/navigator';
 import {ClubService} from '../core/services/ClubService';
 import {listView} from './list/ListView';
 import {meetingView} from './meeting/MeetingView';
+import {playView} from './play/PlayView';
 
 export class AppModel extends HoistAppModel {
     static instance: AppModel;
@@ -12,7 +13,8 @@ export class AppModel extends HoistAppModel {
         track: true,
         pages: [
             {id: 'default', content: listView},
-            {id: 'meeting', content: meetingView}
+            {id: 'meeting', content: meetingView},
+            {id: 'play', content: playView}
         ]
     });
 
@@ -20,11 +22,17 @@ export class AppModel extends HoistAppModel {
         return [
             {
                 name: 'default',
-                path: '/musiclub',
+                path: '/mobile',
                 children: [
                     {
                         name: 'meeting',
-                        path: '/meeting/:slug<\\d+>'
+                        path: '/meeting/:meetingSlug',
+                        children: [
+                            {
+                                name: 'play',
+                                path: '/play/:playSlug'
+                            }
+                        ]
                     }
                 ]
             }
@@ -37,7 +45,7 @@ export class AppModel extends HoistAppModel {
     }
 
     override async doLoadAsync(loadSpec: LoadSpec) {
-        await loadAllAsync([], loadSpec);
+        await loadAllAsync([XH.clubService], loadSpec);
     }
 
     override get supportsVersionBar() {

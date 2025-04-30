@@ -4,11 +4,14 @@ import grails.validation.ValidationException
 import io.xh.hoist.RestController
 import io.xh.hoist.security.Access
 import io.xh.musiclub.MbEntity
+import io.xh.musiclub.MusicBrainzService
 
 @Access(['MUSICLUB_ADMIN'])
 class EntitiesAdminController extends RestController {
 
     static restTarget = MbEntity
+
+    MusicBrainzService musicBrainzService
 
     def create() {
         MbEntity.withTransaction {
@@ -29,7 +32,6 @@ class EntitiesAdminController extends RestController {
         }
     }
 
-
     def update() {
         MbEntity.withTransaction {
             def data = parseRequestJSON().data
@@ -47,5 +49,11 @@ class EntitiesAdminController extends RestController {
         }
     }
 
+    def refreshMany() {
+        def req = parseRequestJSON(),
+            ids = req.ids as List<Long>
+
+        renderJSON(musicBrainzService.refreshMbEntities(ids))
+    }
 
 }

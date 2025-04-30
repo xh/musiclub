@@ -1,4 +1,22 @@
+import {PlainObject} from '@xh/hoist/core';
 import {LocalDate} from '@xh/hoist/utils/datetime';
+
+export interface EntityLink {
+    id: string;
+    type: string;
+    url: string;
+}
+
+export interface MbEntity {
+    id: number;
+    mbId: string;
+    type: MbEntityType;
+    mbJson: PlainObject;
+}
+
+export type MbEntityType = 'artist' | 'releaseGroup' | 'release' | 'recording';
+
+export type MbStatus = 'MATCHED' | 'MISMATCH' | 'PARTIALLY_MATCHED' | 'UNMATCHED';
 
 export interface Meeting {
     id: number;
@@ -11,17 +29,7 @@ export interface Meeting {
     plays: Play[];
 }
 
-export interface Play {
-    id: number;
-    slug: string;
-    member: string;
-    artist: string;
-    title: string;
-    album: string;
-    bonus: boolean;
-    bonusDisplay: string;
-    notes: string;
-}
+export type MeetingDim = 'year' | 'location' | 'meeting' | 'dateYear';
 
 export interface MeetingGroup {
     id: string;
@@ -31,4 +39,25 @@ export interface MeetingGroup {
     meetings: Meeting[];
 }
 
-export type MeetingDim = 'year' | 'location' | 'meeting' | 'dateYear';
+export interface Play {
+    id: number;
+    slug: string;
+    meetingSlug: string;
+    member: string;
+    artist: string;
+    title: string;
+    album: string;
+    coverArtUrl: string | null;
+    coverArtThumbUrl: string | null;
+    bonus: boolean;
+    bonusDisplay: string;
+    mbStatus: MbStatus;
+    notes: string | null;
+}
+
+export interface PlayWithMbEntities extends Play {
+    mbArtist: MbEntity | null;
+    mbReleaseGroup: MbEntity | null;
+    mbRelease: MbEntity | null;
+    mbRecording: MbEntity | null;
+}

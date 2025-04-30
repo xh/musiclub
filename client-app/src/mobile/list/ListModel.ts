@@ -63,7 +63,7 @@ export class ListModel extends HoistModel {
                     ]
                 });
             },
-            onRowClicked: ({data}) => this.onRowTap(data)
+            onRowClicked: ({data}) => this.onRowClicked(data)
         });
 
         this.addReaction(
@@ -107,7 +107,7 @@ export class ListModel extends HoistModel {
                     count: grp.meetingCount,
                     sortKey: groupId
                 },
-                ...grp.meetings.map((mtg) => {
+                ...grp.meetings.map(mtg => {
                     return {
                         id: mtg.slug,
                         groupId: groupId,
@@ -147,12 +147,12 @@ export class ListModel extends HoistModel {
     }
 
     @action
-    private onRowTap(rec: StoreRecord) {
+    private onRowClicked(rec: StoreRecord) {
         const grps = this.expandedGroups,
             dim: MeetingDim = rec?.data.dimension;
 
         if (dim === 'meeting') {
-            XH.appendRoute('meeting', {slug: rec.id});
+            XH.appendRoute('meeting', {meetingSlug: rec.id});
         } else {
             this.expandedGroups = {
                 ...grps,

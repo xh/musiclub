@@ -13,35 +13,51 @@ class PlaysAdminController extends RestController {
 
     def musicBrainzService
 
-    def enhance(Long id) {
-        renderJSON(musicBrainzService.enhancePlay(id))
+    def enhance(Long id, Boolean ignoreCurrent, Integer minScore) {
+        renderJSON(musicBrainzService.enhancePlay(id, ignoreCurrent, minScore))
     }
 
-    def enhancePlays() {
+    def enhanceMany() {
         def req = parseRequestJSON(),
             ids = req.ids as List<Long>,
             ignoreCurrent = req.ignoreCurrent as boolean,
-            minScore = (req.minScore ?: 90) as int,
-            ret = ids.collect {
-                try {
-                    musicBrainzService.enhancePlay(it, ignoreCurrent, minScore)
-                } catch (e) {
-                    logError("Error enhancing play ID $it", e)
-                    return [id: it, error: e.message]
-                }
-            }
-        renderJSON(ret)
+            minScore = (req.minScore ?: 90) as Integer
+
+        renderJSON(musicBrainzService.enhancePlays(ids, ignoreCurrent, minScore))
+    }
+
+    def acceptMany() {
+        def req = parseRequestJSON(),
+            ids = req.ids as List<Long>
+
+        renderJSON(musicBrainzService.acceptMbEntities(ids))
+    }
+
+    def markAsMismatch() {
+        def req = parseRequestJSON(),
+            ids = req.ids as List<Long>,
+            keepArtist = req.keepArtist as boolean
+
+        renderJSON(musicBrainzService.markAsMismatch(ids, keepArtist))
+    }
+
+    def addCoverArt() {
+        def req = parseRequestJSON(),
+            ids = req.ids as List<Long>
+        renderJSON(musicBrainzService.addCoverArt(ids))
     }
 
     def lookupData() {
         renderJSON(
+            members: members,
             meetings: Meeting.list().collect {
                 [value: it.id, label: it.displayName]
             },
             artists: getLookup('artist'),
             releaseGroups: getLookup('releaseGroup'),
             releases: getLookup('release'),
-            recordings: getLookup('recording')
+            recordings: getLookup('recording'),
+            mbStatuses: ['UNMATCHED', 'PARTIALLY_MATCHED', 'MATCHED', 'MISMATCH']
         )
     }
 
@@ -52,6 +68,9 @@ class PlaysAdminController extends RestController {
         if (submit.recordingMbId) musicBrainzService.ensureRecordingCreated(submit.recordingMbId as String)
     }
 
+    //------------------
+    // Implementation
+    //------------------
     private List<Map> getLookup(String entity) {
         def list = MbEntity.findAllByType(entity)
         return list.collect {
@@ -59,7 +78,11 @@ class PlaysAdminController extends RestController {
                 value: it.mbId,
                 label: it.displayName
             ]
-        }
+        }.sort { it.label }
+    }
+
+    private Set<String> getMembers() {
+        return Play.list().collect { it.member }.toSet().sort()
     }
 
 }

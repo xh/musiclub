@@ -5,6 +5,7 @@ import {navigator} from '@xh/hoist/mobile/cmp/navigator';
 import {panel} from '@xh/hoist/mobile/cmp/panel';
 import {AppModel} from './AppModel';
 import './App.scss';
+import '../core/styles/Musiclub.scss';
 import {clubIcon} from '../core/Icons';
 
 export const AppComponent = hoistCmp({

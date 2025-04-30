@@ -1,10 +1,17 @@
 .xh-app {
   --appbar-bg: var(--xh-bg);
   --appbar-title-color: var(--xh-text-color);
+  --black: black;
   --button-active-bg: var(--xh-orange);
   --tbar-bg: var(--xh-bg);
   --grid-group-bg: var(--xh-intent-warning);
   --grid-group-text-color: white;
+
+  // Workaround Chrome emulation (?) bug that makes hover color sticky.
+  .ag-row-hover:not(.ag-full-width-row)::before,
+  .ag-row-hover.ag-full-width-row.ag-row-group::before {
+    background-color: unset;
+  }
 
   &:not(.xh-dark) {
     //--grid-group-bg: var(--xh-text-color);
@@ -32,20 +39,64 @@
     text-transform: uppercase;
   }
 
-  h1 {
+  h1,
+  h2 {
     font-weight: 200;
-    margin: 0 !important;
+    .xh-icon {
+      margin-right: 0.4em;
+    }
   }
 
   h2 {
     font-size: 20px;
-    font-weight: 200;
-    margin: 0 !important;
     text-transform: uppercase;
   }
 
   p {
     margin: 4px 0;
     text-transform: uppercase;
+  }
+
+  //------------------------
+  // Shared comps
+  //------------------------
+  .mc-detail-view {
+    overflow-y: auto;
+
+    &__header {
+      padding: var(--xh-pad-px);
+
+      h1,
+      h2 {
+        margin-top: 0;
+        margin-bottom: 0;
+      }
+
+      &__member {
+        color: var(--xh-orange);
+      }
+
+      &__notes {
+        font-size: 10px;
+        padding: 10px;
+        margin: 10px 10px 0 10px;
+        border-top: 1px solid var(--xh-orange);
+
+        p {
+          text-transform: unset;
+        }
+      }
+    }
+
+    &__section {
+      margin-bottom: var(--xh-pad-px);
+      padding: var(--xh-pad-px);
+
+      h2 {
+        border-bottom: 1px solid var(--xh-orange-muted);
+        margin-bottom: var(--xh-pad-px);
+        padding-bottom: 2px;
+      }
+    }
   }
 }

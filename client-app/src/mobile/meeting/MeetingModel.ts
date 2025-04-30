@@ -1,6 +1,7 @@
 import {DataViewModel} from '@xh/hoist/cmp/dataview';
-import {div, h2, p} from '@xh/hoist/cmp/layout';
+import {div, h2, hbox, img, p} from '@xh/hoist/cmp/layout';
 import {HoistModel, managed, XH} from '@xh/hoist/core';
+import {StoreRecord} from '@xh/hoist/data';
 import {computed, makeObservable} from '@xh/hoist/mobx';
 import {albumIcon, artistIcon, trackIcon} from '../../core/Icons';
 import {Meeting, Play} from '../../core/Types';
@@ -10,8 +11,7 @@ export class MeetingModel extends HoistModel {
 
     @computed
     get meeting(): Meeting {
-        const {slug} = this.componentProps;
-        return XH.clubService.getMeeting(slug);
+        return XH.clubService.getMeeting(this.componentProps.meetingSlug);
     }
 
     constructor() {
@@ -20,16 +20,9 @@ export class MeetingModel extends HoistModel {
 
         this.dataViewModel = new DataViewModel({
             store: {
-                fields: [
-                    {name: 'member', type: 'string'},
-                    {name: 'artist', type: 'string'},
-                    {name: 'title', type: 'string'},
-                    {name: 'album', type: 'string'},
-                    {name: 'bonus', type: 'bool'},
-                    {name: 'notes', type: 'string'},
-                    {name: 'bonusDisplay', type: 'string'}
-                ]
+                fields: XH.clubService.playFields
             },
+            sortBy: 'slug',
             groupBy: 'bonusDisplay',
             showHover: false,
             itemHeight: 130,
@@ -37,22 +30,35 @@ export class MeetingModel extends HoistModel {
             showGroupRowCounts: false,
             renderer: (v, {record}) => {
                 const play: Play = record.data as Play;
-                return div({
-                    className: 'mc-list__item mc-list__item--songPlay',
+                return hbox({
+                    className: `mc-list__item mc-list__item--songPlay mc-song-play ${play.coverArtThumbUrl ? 'mc-song-play--has-cover-art' : ''}`,
                     items: [
-                        h2({
-                            item: play.member,
-                            className: 'mc-member'
+                        div({
+                            className: 'mc-song-play__data',
+                            items: [
+                                h2({
+                                    item: play.member,
+                                    className: 'mc-member'
+                                }),
+                                p(artistIcon(), play.artist),
+                                p(albumIcon(), play.album),
+                                p(trackIcon(), play.title)
+                            ]
                         }),
-                        p(artistIcon(), play.artist),
-                        p(albumIcon(), play.album),
-                        p(trackIcon(), play.title)
+                        img({
+                            src: play.coverArtThumbUrl,
+                            className: 'mc-song-play__cover-art',
+                            alt: play.title,
+                            omit: !play.coverArtThumbUrl
+                        })
                     ]
                 });
             },
-            groupSortFn: (a, b) => {
-                return (a ? 0 : 1) - (b ? 0 : 1);
-            }
+            // Flip group sort - "Main Picks" before "Bonus Round"
+            groupSortFn: (a, b, field, {gridModel}) => {
+                return gridModel.defaultGroupSortFn(b, a);
+            },
+            onRowClicked: ({data}) => this.onRowClicked(data)
         });
 
         this.addReaction({
@@ -67,5 +73,11 @@ export class MeetingModel extends HoistModel {
             },
             fireImmediately: true
         });
+    }
+
+    private onRowClicked(rec: StoreRecord) {
+        if (rec?.data.slug) {
+            XH.appendRoute('play', {playSlug: rec.data.slug});
+        }
     }
 }

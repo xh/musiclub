@@ -8,4 +8,9 @@ class PlaysController extends BaseController {
     def index() {
         renderJSON(Play.list())
     }
+
+    def withEntities() {
+        def play = Play.get(params.id)
+        renderJSON(play: play, *: play.mbEntities)
+    }
 }

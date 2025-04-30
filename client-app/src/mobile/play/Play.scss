@@ -1,0 +1,35 @@
+.xh-app {
+  .mc-play-view {
+    &__warning {
+      color: var(--xh-intent-warning);
+      p {
+        text-transform: unset;
+      }
+    }
+
+    &__cover {
+      margin: var(--xh-pad-half-px) 0;
+      width: 100%;
+    }
+
+    &__track-list {
+      text-transform: uppercase;
+      tr {
+        td:first-child {
+          vertical-align: top;
+          text-align: right;
+          padding-right: 5px;
+        }
+      }
+
+      &__play {
+        color: var(--xh-orange);
+        font-weight: bold;
+      }
+    }
+
+    .mc-link-tags {
+      margin-top: var(--xh-pad-double-px);
+    }
+  }
+}

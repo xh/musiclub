@@ -1,10 +1,27 @@
-import {HoistService, PlainObject, XH} from '@xh/hoist/core';
+import {HoistService, LoadSpec, PlainObject, XH} from '@xh/hoist/core';
+import {FieldSpec} from '@xh/hoist/data';
 import {observable, runInAction} from '@xh/hoist/mobx';
 import {LocalDate} from '@xh/hoist/utils/datetime';
-import {Meeting, MeetingDim, MeetingGroup, Play} from '../Types';
+import {Meeting, MeetingDim, MeetingGroup, Play, PlayWithMbEntities} from '../Types';
 
 export class ClubService extends HoistService {
     @observable.ref meetings: Meeting[] = [];
+    @observable.ref plays: Play[] = [];
+
+    get playFields(): FieldSpec[] {
+        return [
+            {name: 'slug', type: 'string'},
+            {name: 'member', type: 'string'},
+            {name: 'artist', type: 'string'},
+            {name: 'title', type: 'string'},
+            {name: 'album', type: 'string'},
+            {name: 'coverArtUrl', type: 'string'},
+            {name: 'coverArtThumbUrl', type: 'string'},
+            {name: 'bonus', type: 'bool'},
+            {name: 'bonusDisplay', type: 'string'},
+            {name: 'notes', type: 'string'}
+        ];
+    }
 
     getMeetingsBy(dim: MeetingDim): MeetingGroup[] {
         const map: {[key: string]: MeetingGroup} = {};
@@ -30,12 +47,32 @@ export class ClubService extends HoistService {
         return slug ? this.meetings.find(it => it.slug === slug) : null;
     }
 
+    getPlay(slug: string): Play {
+        return slug ? this.plays.find(it => it.slug === slug) : null;
+    }
+
+    async getPlayWithEntities(id: number, loadSpec?: LoadSpec): Promise<PlayWithMbEntities> {
+        const resp = await XH.fetchJson({
+            url: `plays/withEntities/${id}`,
+            loadSpec
+        });
+
+        return {
+            ...this.processRawPlay(resp.play),
+            mbArtist: resp.mbArtist,
+            mbReleaseGroup: resp.mbReleaseGroup,
+            mbRelease: resp.mbRelease,
+            mbRecording: resp.mbRecording
+        };
+    }
+
     override async initAsync(): Promise<void> {
         await super.initAsync();
 
         try {
             const raw = await XH.fetchJson({url: 'meetings'}),
                 meetings: Meeting[] = [],
+                plays: Play[] = [],
                 rejected = [];
 
             raw.map(it => {
@@ -43,6 +80,7 @@ export class ClubService extends HoistService {
                     const mtg = this.processRawMeeting(it);
                     if (mtg.year) {
                         meetings.push(mtg);
+                        plays.push(...mtg.plays);
                     } else {
                         rejected.push(mtg);
                     }
@@ -50,17 +88,23 @@ export class ClubService extends HoistService {
                     this.logError('Error processing meeting', it, e);
                 }
             });
-            runInAction(() => (this.meetings = meetings));
-            this.logInfo(`Loaded ${meetings.length} meetings`, meetings);
+            runInAction(() => {
+                this.meetings = meetings;
+                this.plays = plays;
+            });
+            this.logInfo(`Loaded ${meetings.length} meetings and ${plays.length} plays`);
             if (rejected.length) {
-                this.logWarn(`Rejected ${rejected.length} meetings`, rejected);
+                this.logWarn(`Dropped ${rejected.length} meetings without a year`, rejected);
             }
         } catch (e) {
             XH.handleException(e, {title: 'Error loading Musiclub data'});
         }
     }
 
-    processRawMeeting(raw: PlainObject): Meeting {
+    //------------------
+    // Implementation
+    //------------------
+    private processRawMeeting(raw: PlainObject): Meeting {
         const date = LocalDate.get(raw.date);
         return {
             id: raw.id,
@@ -74,16 +118,20 @@ export class ClubService extends HoistService {
         };
     }
 
-    processRawPlay(raw: PlainObject): Play {
+    private processRawPlay(raw: PlainObject): Play {
         return {
             id: raw.id,
             slug: raw.slug,
+            meetingSlug: raw.meetingSlug,
             member: raw.member ?? '[???]',
             artist: raw.artist ?? '[???]',
             title: raw.title ?? '[???]',
             album: raw.album ?? '[???]',
+            coverArtUrl: raw.coverArtUrl,
+            coverArtThumbUrl: raw.coverArtThumbUrl,
             bonus: raw.bonus,
             bonusDisplay: raw.bonus ? 'Bonus Round' : 'Main Picks',
+            mbStatus: raw.mbStatus,
             notes: raw.notes
         };
     }
