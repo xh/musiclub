@@ -6,7 +6,7 @@ import {meetingsRestGrid} from './tabs/MeetingsRestGrid';
 import {playsRestGrid} from './tabs/PlaysRestGrid';
 
 export class AppModel extends HoistAdminAppModel {
-    static override instance: AppModel;
+    static instance: AppModel;
 
     override async initAsync() {
         await super.initAsync();

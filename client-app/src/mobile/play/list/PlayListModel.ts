@@ -1,28 +1,22 @@
 import {DataViewModel} from '@xh/hoist/cmp/dataview';
+import {GridSorterLike} from '@xh/hoist/cmp/grid';
 import {div, h2, hbox, img, p} from '@xh/hoist/cmp/layout';
-import {HoistModel, managed, XH} from '@xh/hoist/core';
+import {HoistModel, managed, Some, XH} from '@xh/hoist/core';
 import {StoreRecord} from '@xh/hoist/data';
-import {computed, makeObservable} from '@xh/hoist/mobx';
-import {albumIcon, artistIcon, trackIcon} from '../../core/Icons';
-import {Meeting, Play} from '../../core/Types';
+import {albumIcon, artistIcon, trackIcon} from '../../../core/Icons';
+import {Play} from '../../../core/Types';
 
-export class MeetingModel extends HoistModel {
+export class PlayListModel extends HoistModel {
     @managed dataViewModel: DataViewModel;
 
-    @computed
-    get meeting(): Meeting {
-        return XH.clubService.getMeeting(this.componentProps.meetingSlug);
-    }
-
-    constructor() {
+    constructor({parentDim}: {parentDim: 'meeting' | 'member'}) {
         super();
-        makeObservable(this);
 
         this.dataViewModel = new DataViewModel({
             store: {
                 fields: XH.clubService.playFields
             },
-            sortBy: 'slug',
+            sortBy: ['meetingDate', 'slug'],
             groupBy: 'bonusDisplay',
             showHover: false,
             itemHeight: 130,
@@ -31,23 +25,20 @@ export class MeetingModel extends HoistModel {
             renderer: (v, {record}) => {
                 const play: Play = record.data as Play;
                 return hbox({
-                    className: `mc-list__item mc-list__item--songPlay mc-song-play ${play.coverArtThumbUrl ? 'mc-song-play--has-cover-art' : ''}`,
+                    className: `mc-list__item mc-list__item--play ${play.coverArtThumbUrl ? 'mc-list__item--play--with-cover-art' : ''}`,
                     items: [
                         div({
-                            className: 'mc-song-play__data',
+                            className: 'mc-list__item__data',
                             items: [
-                                h2({
-                                    item: play.member,
-                                    className: 'mc-member'
-                                }),
+                                h2(parentDim === 'meeting' ? play.member : play.meetingName),
+                                p(trackIcon(), play.title),
                                 p(artistIcon(), play.artist),
-                                p(albumIcon(), play.album),
-                                p(trackIcon(), play.title)
+                                p(albumIcon(), play.album)
                             ]
                         }),
                         img({
                             src: play.coverArtThumbUrl,
-                            className: 'mc-song-play__cover-art',
+                            className: 'mc-list__item--play__cover-art',
                             alt: play.title,
                             omit: !play.coverArtThumbUrl
                         })
@@ -60,19 +51,14 @@ export class MeetingModel extends HoistModel {
             },
             onRowClicked: ({data}) => this.onRowClicked(data)
         });
+    }
 
-        this.addReaction({
-            track: () => this.meeting,
-            run: () => {
-                const {meeting} = this;
-                if (meeting) {
-                    this.dataViewModel.loadData(meeting.plays);
-                } else {
-                    this.dataViewModel.clear();
-                }
-            },
-            fireImmediately: true
-        });
+    loadData(plays: Play[]) {
+        this.dataViewModel.loadData(plays ?? []);
+    }
+
+    setSortBy(sorters: Some<GridSorterLike>) {
+        this.dataViewModel.setSortBy(sorters);
     }
 
     private onRowClicked(rec: StoreRecord) {

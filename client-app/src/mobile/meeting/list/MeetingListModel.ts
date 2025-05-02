@@ -1,31 +1,44 @@
 import {DataViewModel} from '@xh/hoist/cmp/dataview';
-import {div, h1, h2, hbox, vbox} from '@xh/hoist/cmp/layout';
-import {
-    hoistCmp,
-    HoistModel,
-    HoistProps,
-    LoadSpec,
-    managed,
-    persist,
-    PersistOptions,
-    XH
-} from '@xh/hoist/core';
+import {div, h1, h2, hbox} from '@xh/hoist/cmp/layout';
+import {HoistModel, LoadSpec, managed, persist, PersistOptions, XH} from '@xh/hoist/core';
 import {StoreRecord} from '@xh/hoist/data';
+import {NavigatorModel} from '@xh/hoist/mobile/cmp/navigator';
 import {action, bindable, makeObservable} from '@xh/hoist/mobx';
-import {Meeting, MeetingDim} from '../../core/Types';
+import {Meeting, MeetingDim} from '../../../core/Types';
+import {countTiles} from '../../cmp/CountTiles';
+import {playView} from '../../play/detail/PlayView';
+import {meetingView} from '../detail/MeetingView';
+import {meetingListView} from './MeetingListView';
 
-export class ListModel extends HoistModel {
+export class MeetingListModel extends HoistModel {
     override persistWith: PersistOptions = {localStorageKey: 'musiclubList'};
 
+    @managed navigatorModel: NavigatorModel;
     @managed dataViewModel: DataViewModel;
 
-    @bindable @persist dim: MeetingDim = 'year';
-    @bindable @persist sort: 'asc' | 'desc' = 'asc';
+    @bindable @persist dim: MeetingDim;
+    @bindable @persist sort: 'asc' | 'desc';
     @bindable.ref expandedGroups: Record<string, boolean> = {};
 
-    constructor() {
+    constructor({route, dim, sort}: {route: string; dim: MeetingDim; sort?: 'asc' | 'desc'}) {
         super();
         makeObservable(this);
+
+        this.dim = dim;
+        this.sort = sort ?? 'asc';
+
+        // mobile.years => years
+        const listViewRoute = route.substring(route.lastIndexOf('.') + 1);
+
+        this.navigatorModel = new NavigatorModel({
+            track: true,
+            route,
+            pages: [
+                {id: listViewRoute, content: () => meetingListView()},
+                {id: 'meeting', content: meetingView},
+                {id: 'play', content: playView}
+            ]
+        });
 
         this.dataViewModel = new DataViewModel({
             store: {
@@ -36,7 +49,8 @@ export class ListModel extends HoistModel {
                     {name: 'dimension', type: 'string'},
                     {name: 'sortKey', type: 'string'},
                     {name: 'count', type: 'number', defaultValue: 0},
-                    {name: 'bonusCount', type: 'number', defaultValue: 0}
+                    {name: 'bonusCount', type: 'number', defaultValue: 0},
+                    {name: 'isChild', type: 'bool'}
                 ]
             },
             sortBy: `sortKey|${this.sort}`,
@@ -46,15 +60,18 @@ export class ListModel extends HoistModel {
             renderer: (v, {record}) => {
                 const row = record.data as RowData;
                 return hbox({
-                    className: `mc-list__item mc-list__item--${row.dimension}`,
+                    className: `mc-list__item mc-list__item--${row.dimension} ${row.isChild ? 'mc-list__item--child' : ''}`,
                     items: [
-                        div(
-                            h1(row.title),
-                            h2({
-                                item: row.subtitle,
-                                omit: !row.subtitle
-                            })
-                        ),
+                        div({
+                            className: 'mc-list__item__data',
+                            items: [
+                                h1(row.title),
+                                h2({
+                                    item: row.subtitle,
+                                    omit: !row.subtitle
+                                })
+                            ]
+                        }),
                         countTiles({
                             count: row.count,
                             bonusCount: row.bonusCount,
@@ -105,7 +122,8 @@ export class ListModel extends HoistModel {
                     title: grp.title,
                     dimension: grp.dimension,
                     count: grp.meetingCount,
-                    sortKey: groupId
+                    sortKey: groupId,
+                    isChild: false
                 },
                 ...grp.meetings.map(mtg => {
                     return {
@@ -116,7 +134,8 @@ export class ListModel extends HoistModel {
                         dimension: 'meeting' as const,
                         count: mtg.plays.filter(it => !it.bonus).length,
                         bonusCount: mtg.plays.filter(it => it.bonus).length,
-                        sortKey: `${groupId}|${mtg.date}`
+                        sortKey: `${groupId}|${mtg.date}`,
+                        isChild: true
                     };
                 })
             );
@@ -162,30 +181,9 @@ export class ListModel extends HoistModel {
     }
 }
 
-const countTiles = hoistCmp.factory<
-    HoistProps & {count: number; bonusCount: number; big?: boolean}
->({
-    render({count, bonusCount, big}) {
-        return vbox({
-            className: `mc-count-tiles ${big ? 'mc-count-tiles--big' : ''}`,
-            items: [
-                ...Array.from({length: count ?? 0}).map(_ => {
-                    return div({
-                        className: 'mc-count-tiles__tile'
-                    });
-                }),
-                ...Array.from({length: bonusCount ?? 0}).map(_ => {
-                    return div({
-                        className: 'mc-count-tiles__tile mc-count-tiles__tile--bonus'
-                    });
-                })
-            ]
-        });
-    }
-});
-
 interface RowData {
     id: string | number;
+    isChild: boolean;
     groupId: string;
     title: string;
     subtitle?: string;

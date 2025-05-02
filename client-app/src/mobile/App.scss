@@ -7,6 +7,12 @@
   --grid-group-bg: var(--xh-intent-warning);
   --grid-group-text-color: white;
 
+  --mc-list-text-bg: rgba(255, 255, 255, 0.8);
+
+  &.xh-dark {
+    --mc-list-text-bg: rgba(0, 0, 0, 0.8);
+  }
+
   // Workaround Chrome emulation (?) bug that makes hover color sticky.
   .ag-row-hover:not(.ag-full-width-row)::before,
   .ag-row-hover.ag-full-width-row.ag-row-group::before {
@@ -57,8 +63,68 @@
     text-transform: uppercase;
   }
 
+  // Mobile tab switcher - taller, icons only - review in Hoist
+  .tabbar__content {
+    height: calc(100% - 61px);
+  }
+  .xh-tab-container .tabbar {
+    height: 60px;
+  }
+
+  .xh-tab-container .tabbar__button {
+    flex-direction: column;
+    height: 60px;
+  }
+
   //------------------------
-  // Shared comps
+  // List styles
+  //------------------------
+  .mc-list {
+    --ag-row-hover-color: var(--xh-bg);
+
+    &__item {
+      border-bottom: var(--xh-border-solid);
+      padding: var(--xh-pad-px);
+      width: 100%;
+      align-items: center;
+
+      &__data {
+        flex: 1;
+      }
+
+      h1 {
+        display: inline-block;
+        background-color: var(--mc-list-text-bg);
+        margin-bottom: 0 !important;
+        margin-top: 0 !important;
+        padding: 4px;
+      }
+
+      h2 {
+        display: inline-block;
+        background-color: var(--mc-list-text-bg);
+        margin-top: 0 !important;
+        padding: 0 5px 0 0;
+        white-space: nowrap;
+      }
+
+      &--member,
+      &--year,
+      &--dateYear {
+        h1 {
+          color: var(--xh-orange);
+          font-size: 60px;
+        }
+      }
+
+      &--child {
+        border-left: 5px solid var(--xh-orange);
+      }
+    }
+  }
+
+  //------------------------
+  // Detail view styles
   //------------------------
   .mc-detail-view {
     overflow-y: auto;
@@ -72,7 +138,7 @@
         margin-bottom: 0;
       }
 
-      &__member {
+      h2 {
         color: var(--xh-orange);
       }
 

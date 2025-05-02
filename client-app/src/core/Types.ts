@@ -21,6 +21,7 @@ export type MbStatus = 'MATCHED' | 'MISMATCH' | 'PARTIALLY_MATCHED' | 'UNMATCHED
 export interface Meeting {
     id: number;
     slug: string;
+    name: string;
     date: LocalDate;
     dateYear: number;
     year: string;
@@ -29,7 +30,7 @@ export interface Meeting {
     plays: Play[];
 }
 
-export type MeetingDim = 'year' | 'location' | 'meeting' | 'dateYear';
+export type MeetingDim = 'dateYear' | 'year' | 'location' | 'meeting';
 
 export interface MeetingGroup {
     id: string;
@@ -39,11 +40,29 @@ export interface MeetingGroup {
     meetings: Meeting[];
 }
 
+export interface Member {
+    slug: string;
+    name: string;
+    firstMeetingDate: LocalDate;
+    meetings: Meeting[];
+    meetingCount: number;
+    plays: Play[];
+    playCount: number;
+    // TODO - linked user info, profile pic, bio/blurb
+}
+
 export interface Play {
     id: number;
     slug: string;
+    meetingId: number;
     meetingSlug: string;
+    meetingName: string;
+    meetingYear: number;
+    meetingDate: LocalDate;
+    // Will be placeholder if no member
     member: string;
+    // Will be null if no member
+    memberSlug: string;
     artist: string;
     title: string;
     album: string;
@@ -54,6 +73,8 @@ export interface Play {
     mbStatus: MbStatus;
     notes: string | null;
 }
+
+export type PlayDim = 'artist' | 'bonusDisplay' | 'meetingDate' | 'meetingYear' | 'member';
 
 export interface PlayWithMbEntities extends Play {
     mbArtist: MbEntity | null;

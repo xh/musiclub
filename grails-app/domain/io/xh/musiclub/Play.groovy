@@ -75,8 +75,12 @@ class Play implements JSONFormat {
         [
             id              : id,
             slug            : slug,
-            meeting         : meeting.id,
-            meetingSlug     : meeting.slug,
+            meeting         : [
+                id  : meeting.id,
+                slug: meeting.slug,
+                year: meeting.year,
+                date: meeting.date
+            ],
             member          : member,
             artist          : artist,
             album           : album,

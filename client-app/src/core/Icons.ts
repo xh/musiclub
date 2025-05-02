@@ -17,6 +17,7 @@ export const artistIcon = (opts = {}) => Icon.icon({iconName: 'user-music', pref
 export const clubIcon = (opts = {}) => Icon.icon({iconName: 'turntable', prefix, ...opts});
 export const locationIcon = (opts = {}) => Icon.location({prefix, ...opts});
 export const meetingIcon = (opts = {}) => Icon.icon({iconName: 'people-group', prefix, ...opts});
+export const memberIcon = (opts = {}) => Icon.user({prefix, ...opts});
 export const spotifyIcon = (opts = {}) => Icon.icon({iconName: 'spotify', prefix: 'fab', ...opts});
 export const youTubeIcon = (opts = {}) => Icon.icon({iconName: 'youtube', prefix: 'fab', ...opts});
 export const trackIcon = (opts = {}) => Icon.icon({iconName: 'list-music', prefix, ...opts});

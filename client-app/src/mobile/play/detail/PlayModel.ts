@@ -1,8 +1,8 @@
 import {HoistModel, LoadSpec, XH} from '@xh/hoist/core';
 import {computed, makeObservable, observable, runInAction} from '@xh/hoist/mobx';
 import {isEmpty} from 'lodash';
-import {EntityLink, Meeting, Play, PlayWithMbEntities} from '../../core/Types';
-import {extractLinks, extractStreamingLinks} from '../../core/Utils';
+import {EntityLink, Meeting, Play, PlayWithMbEntities} from '../../../core/Types';
+import {extractLinks, extractStreamingLinks} from '../../../core/Utils';
 
 export class PlayModel extends HoistModel {
     @observable.ref _playWithEntities: PlayWithMbEntities;

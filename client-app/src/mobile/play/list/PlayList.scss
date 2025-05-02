@@ -1,0 +1,33 @@
+.mc-list {
+  .mc-list__item--play {
+    .mc-list__item__data {
+      h2 {
+        color: var(--xh-orange);
+        font-weight: 500;
+        margin-bottom: 0;
+      }
+
+      .xh-icon {
+        margin-right: 5px;
+      }
+
+      p {
+        font-size: 0.8em;
+        //white-space: nowrap;
+        overflow: hidden;
+      }
+    }
+
+    &--with-cover-art {
+      .mc-list-item__data {
+        max-width: calc(100% - 105px);
+        margin-right: 5px;
+      }
+    }
+
+    &__cover-art {
+      border-radius: 4px;
+      width: 100px;
+    }
+  }
+}

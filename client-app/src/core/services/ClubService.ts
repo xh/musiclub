@@ -2,16 +2,24 @@ import {HoistService, LoadSpec, PlainObject, XH} from '@xh/hoist/core';
 import {FieldSpec} from '@xh/hoist/data';
 import {observable, runInAction} from '@xh/hoist/mobx';
 import {LocalDate} from '@xh/hoist/utils/datetime';
-import {Meeting, MeetingDim, MeetingGroup, Play, PlayWithMbEntities} from '../Types';
+import {fromPairs, kebabCase, sortBy, values} from 'lodash';
+import {Meeting, MeetingDim, MeetingGroup, Member, Play, PlayWithMbEntities} from '../Types';
 
 export class ClubService extends HoistService {
     @observable.ref meetings: Meeting[] = [];
     @observable.ref plays: Play[] = [];
+    @observable.ref members: Member[] = [];
 
     get playFields(): FieldSpec[] {
         return [
             {name: 'slug', type: 'string'},
+            {name: 'meetingId', type: 'number'},
+            {name: 'meetingSlug', type: 'string'},
+            {name: 'meetingName', type: 'string'},
+            {name: 'meetingYear', type: 'string'},
+            {name: 'meetingDate', type: 'localDate'},
             {name: 'member', type: 'string'},
+            {name: 'memberSlug', type: 'string'},
             {name: 'artist', type: 'string'},
             {name: 'title', type: 'string'},
             {name: 'album', type: 'string'},
@@ -19,6 +27,7 @@ export class ClubService extends HoistService {
             {name: 'coverArtThumbUrl', type: 'string'},
             {name: 'bonus', type: 'bool'},
             {name: 'bonusDisplay', type: 'string'},
+            {name: 'mbStatus', type: 'string'},
             {name: 'notes', type: 'string'}
         ];
     }
@@ -51,6 +60,10 @@ export class ClubService extends HoistService {
         return slug ? this.plays.find(it => it.slug === slug) : null;
     }
 
+    getMember(slug: string): Member {
+        return slug ? this.members.find(it => it.slug === slug) : null;
+    }
+
     async getPlayWithEntities(id: number, loadSpec?: LoadSpec): Promise<PlayWithMbEntities> {
         const resp = await XH.fetchJson({
             url: `plays/withEntities/${id}`,
@@ -70,8 +83,8 @@ export class ClubService extends HoistService {
         await super.initAsync();
 
         try {
-            const raw = await XH.fetchJson({url: 'meetings'}),
-                meetings: Meeting[] = [],
+            const raw = await XH.fetchJson({url: 'meetings'});
+            let meetings: Meeting[] = [],
                 plays: Play[] = [],
                 rejected = [];
 
@@ -88,9 +101,45 @@ export class ClubService extends HoistService {
                     this.logError('Error processing meeting', it, e);
                 }
             });
+
+            meetings = sortBy(meetings, 'date');
+            plays = sortBy(plays, ['meetingDate', 'slug']);
+
+            // Extract members from plays
+            const meetingsById = fromPairs(meetings.map(it => [it.id, it])),
+                membersBySlug: Record<string, Member> = {};
+
+            plays.forEach(play => {
+                const {memberSlug, member: name} = play;
+                if (!memberSlug) return;
+
+                if (!membersBySlug[memberSlug]) {
+                    membersBySlug[memberSlug] = {
+                        slug: memberSlug,
+                        name,
+                        firstMeetingDate: play.meetingDate,
+                        meetings: [],
+                        meetingCount: 0,
+                        plays: [],
+                        playCount: 0
+                    };
+                }
+                const member = membersBySlug[memberSlug],
+                    meeting = meetingsById[play.meetingId];
+
+                if (!member.meetings.includes(meeting)) {
+                    member.meetings.push(meeting);
+                    member.meetingCount++;
+                }
+                member.plays.push(play);
+                member.playCount++;
+            });
+
+            // Flush into caches
             runInAction(() => {
                 this.meetings = meetings;
                 this.plays = plays;
+                this.members = values(membersBySlug);
             });
             this.logInfo(`Loaded ${meetings.length} meetings and ${plays.length} plays`);
             if (rejected.length) {
@@ -109,6 +158,7 @@ export class ClubService extends HoistService {
         return {
             id: raw.id,
             slug: raw.slug,
+            name: `#${raw.slug} - ${raw.year}`,
             date,
             dateYear: date ? parseInt(date.format('YYYY')) : null,
             year: raw.year,
@@ -119,16 +169,25 @@ export class ClubService extends HoistService {
     }
 
     private processRawPlay(raw: PlainObject): Play {
+        const {meeting} = raw;
         return {
             id: raw.id,
             slug: raw.slug,
-            meetingSlug: raw.meetingSlug,
-            member: raw.member ?? '[???]',
-            artist: raw.artist ?? '[???]',
-            title: raw.title ?? '[???]',
-            album: raw.album ?? '[???]',
+
+            meetingId: meeting.id,
+            meetingSlug: meeting.slug,
+            meetingName: `#${meeting.slug} - ${meeting.year}`,
+            meetingYear: meeting.year,
+            meetingDate: LocalDate.get(meeting.date),
+
+            member: raw.member ?? '???',
+            memberSlug: raw.member ? kebabCase(raw.member) : null,
+            artist: raw.artist ?? '???',
+            title: raw.title ?? '???',
+            album: raw.album ?? '???',
             coverArtUrl: raw.coverArtUrl,
             coverArtThumbUrl: raw.coverArtThumbUrl,
+
             bonus: raw.bonus,
             bonusDisplay: raw.bonus ? 'Bonus Round' : 'Main Picks',
             mbStatus: raw.mbStatus,

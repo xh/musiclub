@@ -3,8 +3,8 @@ import {markdown} from '@xh/hoist/cmp/markdown';
 import {creates, hoistCmp} from '@xh/hoist/core';
 import {Icon} from '@xh/hoist/icon';
 import {compact, isEmpty, uniq} from 'lodash';
-import {linkTags} from '../cmp/LinkTags';
-import {albumIcon, artistIcon} from '../../core/Icons';
+import {linkTags} from '../../cmp/LinkTags';
+import {albumIcon, artistIcon} from '../../../core/Icons';
 import {PlayModel} from './PlayModel';
 import './Play.scss';
 
@@ -23,11 +23,8 @@ export const playView = hoistCmp.factory({
                 div({
                     className: 'mc-detail-view__header',
                     items: [
-                        h2({
-                            className: 'mc-detail-view__header__member',
-                            item: play.member
-                        }),
                         h1(play.title),
+                        h2(`${play.member} @ ${play.meetingName}`),
                         div({
                             className: 'mc-detail-view__header__notes',
                             item: markdown({content: play.notes}),

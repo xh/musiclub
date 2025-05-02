@@ -1,11 +1,10 @@
-import {dataView} from '@xh/hoist/cmp/dataview';
 import {div, h1, h2, placeholder} from '@xh/hoist/cmp/layout';
 import {markdown} from '@xh/hoist/cmp/markdown';
 import {creates, hoistCmp} from '@xh/hoist/core';
 import {Icon} from '@xh/hoist/icon';
 import {panel} from '@xh/hoist/mobile/cmp/panel';
+import {playListView} from '../../play/list/PlayListView';
 import {MeetingModel} from './MeetingModel';
-import './Meeting.scss';
 
 export const meetingView = hoistCmp.factory({
     displayName: 'MeetingView',
@@ -22,7 +21,7 @@ export const meetingView = hoistCmp.factory({
                 div({
                     className: 'mc-detail-view__header',
                     items: [
-                        h1(`#${mtg.slug} - ${mtg.year}`),
+                        h1(mtg.name),
                         h2(mtg.location),
                         h2(mtg.date?.toString() ?? null),
                         div({
@@ -32,7 +31,7 @@ export const meetingView = hoistCmp.factory({
                         })
                     ]
                 }),
-                dataView({className: 'mc-list'})
+                playListView()
             ]
         });
     }

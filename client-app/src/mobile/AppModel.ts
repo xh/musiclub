@@ -1,38 +1,107 @@
-import {HoistAppModel, loadAllAsync, LoadSpec, managed, XH} from '@xh/hoist/core';
-import {NavigatorModel} from '@xh/hoist/mobile/cmp/navigator';
+import {placeholder} from '@xh/hoist/cmp/layout';
+import {TabContainerModel} from '@xh/hoist/cmp/tab';
+import {HoistAppModel, loadAllAsync, LoadSpec, XH} from '@xh/hoist/core';
+import {Icon} from '@xh/hoist/icon';
+import {meetingIcon, memberIcon} from '../core/Icons';
 import {ClubService} from '../core/services/ClubService';
-import {listView} from './list/ListView';
-import {meetingView} from './meeting/MeetingView';
-import {playView} from './play/PlayView';
+import {meetingList} from './meeting/list/MeetingList';
+import {memberList} from './member/list/MemberList';
 
 export class AppModel extends HoistAppModel {
     static instance: AppModel;
 
-    @managed
-    navigatorModel: NavigatorModel = new NavigatorModel({
-        track: true,
-        pages: [
-            {id: 'default', content: listView},
-            {id: 'meeting', content: meetingView},
-            {id: 'play', content: playView}
+    tabContainerModel: TabContainerModel = new TabContainerModel({
+        route: 'mobile',
+        tabs: [
+            {
+                id: 'years',
+                title: null,
+                icon: Icon.calendar(),
+                content: () => meetingList({modelConfig: {dim: 'year', route: 'mobile.years'}})
+            },
+            {
+                id: 'meetings',
+                title: null,
+                icon: meetingIcon(),
+                content: () =>
+                    meetingList({modelConfig: {dim: 'dateYear', route: 'mobile.meetings'}})
+            },
+            {
+                id: 'members',
+                title: null,
+                icon: memberIcon(),
+                content: () => memberList({modelConfig: {route: 'mobile.members'}})
+            },
+            {
+                id: 'more',
+                title: null,
+                icon: Icon.ellipsisHorizontal(),
+                content: () =>
+                    placeholder({
+                        items: [Icon.settings(), 'TODO - settings, etc...']
+                    })
+            }
         ]
     });
 
     override getRoutes() {
         return [
             {
-                name: 'default',
+                name: 'mobile',
                 path: '/mobile',
+                forwardTo: 'mobile.years',
                 children: [
                     {
-                        name: 'meeting',
-                        path: '/meeting/:meetingSlug',
+                        name: 'years',
+                        path: '/years',
                         children: [
                             {
-                                name: 'play',
-                                path: '/play/:playSlug'
+                                name: 'meeting',
+                                path: '/meeting/:meetingSlug',
+                                children: [
+                                    {
+                                        name: 'play',
+                                        path: '/:playSlug'
+                                    }
+                                ]
                             }
                         ]
+                    },
+                    {
+                        name: 'meetings',
+                        path: '/meetings',
+                        children: [
+                            {
+                                name: 'meeting',
+                                path: '/meeting/:meetingSlug',
+                                children: [
+                                    {
+                                        name: 'play',
+                                        path: '/:playSlug'
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        name: 'members',
+                        path: '/members',
+                        children: [
+                            {
+                                name: 'member',
+                                path: '/member/:memberSlug',
+                                children: [
+                                    {
+                                        name: 'play',
+                                        path: '/:playSlug'
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        name: 'more',
+                        path: '/more'
                     }
                 ]
             }

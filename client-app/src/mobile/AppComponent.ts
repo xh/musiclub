@@ -1,12 +1,12 @@
+import {tabContainer} from '@xh/hoist/cmp/tab';
 import {hoistCmp, uses, XH} from '@xh/hoist/core';
 import {Icon} from '@xh/hoist/icon';
 import {appBar} from '@xh/hoist/mobile/cmp/header';
-import {navigator} from '@xh/hoist/mobile/cmp/navigator';
 import {panel} from '@xh/hoist/mobile/cmp/panel';
+import {clubIcon} from '../core/Icons';
 import {AppModel} from './AppModel';
 import './App.scss';
 import '../core/styles/Musiclub.scss';
-import {clubIcon} from '../core/Icons';
 
 export const AppComponent = hoistCmp({
     displayName: 'App',
@@ -30,7 +30,7 @@ export const AppComponent = hoistCmp({
                     ]
                 }
             }),
-            item: navigator(),
+            item: tabContainer(),
             mask: 'onLoad'
         });
     }
