@@ -1,5 +1,5 @@
 import {DataViewModel} from '@xh/hoist/cmp/dataview';
-import {div, h1, h2, hbox} from '@xh/hoist/cmp/layout';
+import {div, h1, h2, hbox, span} from '@xh/hoist/cmp/layout';
 import {HoistModel, LoadSpec, managed, persist, PersistOptions, XH} from '@xh/hoist/core';
 import {StoreRecord} from '@xh/hoist/data';
 import {NavigatorModel} from '@xh/hoist/mobile/cmp/navigator';
@@ -65,9 +65,9 @@ export class MeetingListModel extends HoistModel {
                         div({
                             className: 'mc-list__item__data',
                             items: [
-                                h1(row.title),
+                                h1(span(row.title)),
                                 h2({
-                                    item: row.subtitle,
+                                    item: span(row.subtitle),
                                     omit: !row.subtitle
                                 })
                             ]

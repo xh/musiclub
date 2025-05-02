@@ -1,5 +1,5 @@
 import {DataViewModel} from '@xh/hoist/cmp/dataview';
-import {div, h1, hbox} from '@xh/hoist/cmp/layout';
+import {div, h1, hbox, span} from '@xh/hoist/cmp/layout';
 import {HoistModel, LoadSpec, managed, XH} from '@xh/hoist/core';
 import {StoreRecord} from '@xh/hoist/data';
 import {NavigatorModel} from '@xh/hoist/mobile/cmp/navigator';
@@ -52,7 +52,7 @@ export class MemberListModel extends HoistModel {
                     items: [
                         div({
                             className: 'mc-list__item__data',
-                            items: [h1(member.name)]
+                            items: [h1(span(member.name))]
                         }),
                         countTiles({
                             count: member.meetingCount
