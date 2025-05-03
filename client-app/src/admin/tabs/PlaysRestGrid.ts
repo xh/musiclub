@@ -53,6 +53,7 @@ class SongPlayRestGridModel extends HoistModel {
                         recordingMb = this.lookupVal(raw, 'recordingMbId');
                     return {
                         ...raw,
+                        meeting: raw.meeting.id,
                         artistMb,
                         artistMatch: raw.artist && raw.artist === artistMb,
                         releaseGroupMb,
