@@ -1,7 +1,7 @@
 import {TabContainerModel} from '@xh/hoist/cmp/tab';
 import {HoistAppModel, loadAllAsync, LoadSpec, XH} from '@xh/hoist/core';
 import {Icon} from '@xh/hoist/icon';
-import {meetingIcon, memberIcon} from '../core/Icons';
+import {memberIcon} from '../core/Icons';
 import {ClubService} from '../core/services/ClubService';
 import {meetingList} from './meeting/list/MeetingList';
 import {memberList} from './member/list/MemberList';
@@ -14,24 +14,12 @@ export class AppModel extends HoistAppModel {
         route: 'mobile',
         tabs: [
             {
-                id: 'years',
+                id: 'meetings',
                 title: null,
                 icon: Icon.calendar(),
                 content: () =>
                     meetingList({
-                        modelConfig: {title: 'Years', dim: 'year', route: 'mobile.years'}
-                    })
-            },
-            {
-                id: 'meetings',
-                title: null,
-                icon: meetingIcon(),
-                content: () =>
-                    meetingList({
                         modelConfig: {
-                            title: 'Meetings',
-                            dim: null,
-                            selectableDims: ['location'],
                             route: 'mobile.meetings'
                         }
                     })
@@ -59,24 +47,8 @@ export class AppModel extends HoistAppModel {
             {
                 name: 'mobile',
                 path: '/mobile',
-                forwardTo: 'mobile.years',
+                forwardTo: 'mobile.meetings',
                 children: [
-                    {
-                        name: 'years',
-                        path: '/years',
-                        children: [
-                            {
-                                name: 'meeting',
-                                path: '/meeting/:meetingSlug',
-                                children: [
-                                    {
-                                        name: 'play',
-                                        path: '/:playSlug'
-                                    }
-                                ]
-                            }
-                        ]
-                    },
                     {
                         name: 'meetings',
                         path: '/meetings',

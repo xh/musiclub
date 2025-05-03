@@ -1,7 +1,16 @@
 import {DataViewModel} from '@xh/hoist/cmp/dataview';
 import {div, h1, h2, hbox, span} from '@xh/hoist/cmp/layout';
-import {HoistModel, LoadSpec, managed, persist, PersistOptions, XH} from '@xh/hoist/core';
+import {
+    HoistModel,
+    LoadSpec,
+    managed,
+    persist,
+    PersistOptions,
+    SelectOption,
+    XH
+} from '@xh/hoist/core';
 import {StoreRecord} from '@xh/hoist/data';
+import {Icon} from '@xh/hoist/icon';
 import {NavigatorModel} from '@xh/hoist/mobile/cmp/navigator';
 import {action, bindable, makeObservable} from '@xh/hoist/mobx';
 import {wait} from '@xh/hoist/promise';
@@ -10,38 +19,32 @@ import {countTiles} from '../../cmp/CountTiles';
 import {playView} from '../../play/detail/PlayView';
 import {meetingView} from '../detail/MeetingView';
 import {meetingListView} from './MeetingListView';
+import {pluralize} from '@xh/hoist/utils/js';
 
 export class MeetingListModel extends HoistModel {
-    override persistWith: PersistOptions = {localStorageKey: 'musiclubList'};
+    override persistWith: PersistOptions = {localStorageKey: 'meetingList'};
 
     @managed navigatorModel: NavigatorModel;
     @managed dataViewModel: DataViewModel;
 
-    title: string;
-    selectableDims: MeetingDim[];
-    @bindable @persist dim: MeetingDim;
+    selectableDims: SelectOption[] = [
+        {label: Icon.calendar(), value: 'year'},
+        {label: Icon.location(), value: 'location'},
+        {label: Icon.list(), value: 'meeting'}
+    ];
+
+    @bindable @persist dim: MeetingDim = 'year';
     @bindable @persist sort: 'asc' | 'desc';
     @bindable.ref expandedGroups: Record<string, boolean> = {};
 
-    constructor({
-        route,
-        title = 'Meetings',
-        dim,
-        selectableDims,
-        sort
-    }: {
-        route: string;
-        title: string;
-        dim: MeetingDim;
-        selectableDims: MeetingDim[];
-        sort?: 'asc' | 'desc';
-    }) {
+    get title(): string {
+        return pluralize(this.dim);
+    }
+
+    constructor({route, sort}: {route: string; sort?: 'asc' | 'desc'}) {
         super();
         makeObservable(this);
 
-        this.title = title;
-        this.dim = dim;
-        this.selectableDims = selectableDims ?? [];
         this.sort = sort ?? 'asc';
 
         // mobile.years => years
@@ -129,7 +132,7 @@ export class MeetingListModel extends HoistModel {
         const {dim} = this,
             data: RowData[] = [];
 
-        if (dim) {
+        if (dim != 'meeting') {
             const groups = XH.clubService.getMeetingsBy(dim);
             groups.forEach(grp => {
                 const groupId = `${grp.dimension}-${grp.id}`;
@@ -193,7 +196,7 @@ export class MeetingListModel extends HoistModel {
     private updateFilter() {
         this.dataViewModel.store.setFilter(rec => {
             return (
-                !this.dim ||
+                this.dim === 'meeting' ||
                 rec.data.dimension !== 'meeting' ||
                 this.expandedGroups[rec.data.groupId] === true
             );
@@ -206,7 +209,7 @@ export class MeetingListModel extends HoistModel {
             dim: MeetingDim = rec?.data.dimension;
 
         if (dim === 'meeting') {
-            XH.appendRoute('meeting', {meetingSlug: rec.id});
+            XH.appendRoute('meeting', {meetingSlug: rec.id.toString()});
         } else {
             const expanded = !grps[rec.id];
             this.expandedGroups = {
