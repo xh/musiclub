@@ -6,7 +6,7 @@ export const meetingList = hoistCmp.factory({
     displayName: 'MeetingList',
     model: uses(MeetingListModel),
 
-    render({model}) {
+    render() {
         return navigator();
     }
 });

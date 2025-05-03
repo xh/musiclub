@@ -4,6 +4,7 @@ import {HoistModel, LoadSpec, managed, persist, PersistOptions, XH} from '@xh/ho
 import {StoreRecord} from '@xh/hoist/data';
 import {NavigatorModel} from '@xh/hoist/mobile/cmp/navigator';
 import {action, bindable, makeObservable} from '@xh/hoist/mobx';
+import {wait} from '@xh/hoist/promise';
 import {Meeting, MeetingDim} from '../../../core/Types';
 import {countTiles} from '../../cmp/CountTiles';
 import {playView} from '../../play/detail/PlayView';
@@ -16,15 +17,31 @@ export class MeetingListModel extends HoistModel {
     @managed navigatorModel: NavigatorModel;
     @managed dataViewModel: DataViewModel;
 
+    title: string;
+    selectableDims: MeetingDim[];
     @bindable @persist dim: MeetingDim;
     @bindable @persist sort: 'asc' | 'desc';
     @bindable.ref expandedGroups: Record<string, boolean> = {};
 
-    constructor({route, dim, sort}: {route: string; dim: MeetingDim; sort?: 'asc' | 'desc'}) {
+    constructor({
+        route,
+        title = 'Meetings',
+        dim,
+        selectableDims,
+        sort
+    }: {
+        route: string;
+        title: string;
+        dim: MeetingDim;
+        selectableDims: MeetingDim[];
+        sort?: 'asc' | 'desc';
+    }) {
         super();
         makeObservable(this);
 
+        this.title = title;
         this.dim = dim;
+        this.selectableDims = selectableDims ?? [];
         this.sort = sort ?? 'asc';
 
         // mobile.years => years
@@ -60,7 +77,7 @@ export class MeetingListModel extends HoistModel {
             renderer: (v, {record}) => {
                 const row = record.data as RowData;
                 return hbox({
-                    className: `mc-list__item mc-list__item--${row.dimension} ${row.isChild ? 'mc-list__item--child' : ''}`,
+                    className: `mc-list__item mc-list__item--${row.dimension} ${row.isChild ? 'mc-list__item--child' : 'mc-list__item--parent'}`,
                     items: [
                         div({
                             className: 'mc-list__item__data',
@@ -110,37 +127,53 @@ export class MeetingListModel extends HoistModel {
 
     override async doLoadAsync(loadSpec: LoadSpec) {
         const {dim} = this,
-            groups = XH.clubService.getMeetingsBy(dim),
             data: RowData[] = [];
 
-        groups.forEach(grp => {
-            const groupId = `${grp.dimension}-${grp.id}`;
-            data.push(
-                {
-                    id: groupId,
-                    groupId,
-                    title: grp.title,
-                    dimension: grp.dimension,
-                    count: grp.meetingCount,
-                    sortKey: groupId,
+        if (dim) {
+            const groups = XH.clubService.getMeetingsBy(dim);
+            groups.forEach(grp => {
+                const groupId = `${grp.dimension}-${grp.id}`;
+                data.push(
+                    {
+                        id: groupId,
+                        groupId,
+                        title: grp.title,
+                        dimension: grp.dimension,
+                        count: grp.meetingCount,
+                        sortKey: `[${groupId}]`,
+                        isChild: false
+                    },
+                    ...grp.meetings.map(mtg => {
+                        return {
+                            id: mtg.slug,
+                            groupId: groupId,
+                            title: this.getMeetingTitle(mtg),
+                            subtitle: this.getMeetingSubtitle(mtg),
+                            dimension: 'meeting' as const,
+                            count: mtg.plays.filter(it => !it.bonus).length,
+                            bonusCount: mtg.plays.filter(it => it.bonus).length,
+                            sortKey: `[${groupId}][${mtg.date}]`,
+                            isChild: true
+                        };
+                    })
+                );
+            });
+        } else {
+            const meetings = XH.clubService.meetings;
+            meetings.forEach(mtg => {
+                data.push({
+                    id: mtg.id,
+                    groupId: mtg.slug,
+                    title: this.getMeetingTitle(mtg),
+                    subtitle: this.getMeetingSubtitle(mtg),
+                    dimension: 'meeting' as const,
+                    count: mtg.plays.filter(it => !it.bonus).length,
+                    bonusCount: mtg.plays.filter(it => it.bonus).length,
+                    sortKey: mtg.date.toString(),
                     isChild: false
-                },
-                ...grp.meetings.map(mtg => {
-                    return {
-                        id: mtg.slug,
-                        groupId: groupId,
-                        title: this.getMeetingTitle(mtg),
-                        subtitle: this.getMeetingSubtitle(mtg),
-                        dimension: 'meeting' as const,
-                        count: mtg.plays.filter(it => !it.bonus).length,
-                        bonusCount: mtg.plays.filter(it => it.bonus).length,
-                        sortKey: `${groupId}|${mtg.date}`,
-                        isChild: true
-                    };
-                })
-            );
-        });
-
+                });
+            });
+        }
         this.dataViewModel.loadData(data);
     }
 
@@ -160,23 +193,35 @@ export class MeetingListModel extends HoistModel {
     private updateFilter() {
         this.dataViewModel.store.setFilter(rec => {
             return (
-                rec.data.dimension !== 'meeting' || this.expandedGroups[rec.data.groupId] === true
+                !this.dim ||
+                rec.data.dimension !== 'meeting' ||
+                this.expandedGroups[rec.data.groupId] === true
             );
         });
     }
 
     @action
     private onRowClicked(rec: StoreRecord) {
-        const grps = this.expandedGroups,
+        const {dataViewModel, expandedGroups: grps} = this,
             dim: MeetingDim = rec?.data.dimension;
 
         if (dim === 'meeting') {
             XH.appendRoute('meeting', {meetingSlug: rec.id});
         } else {
+            const expanded = !grps[rec.id];
             this.expandedGroups = {
                 ...grps,
-                [rec.id]: !grps[rec.id]
+                [rec.id]: expanded
             };
+
+            if (expanded) {
+                wait().then(() => {
+                    const meetingRec = dataViewModel.store.records.find(
+                        it => it.data.groupId === rec.id && it.data.dimension === 'meeting'
+                    );
+                    dataViewModel.gridModel.ensureRecordsVisibleAsync(meetingRec);
+                });
+            }
         }
     }
 }

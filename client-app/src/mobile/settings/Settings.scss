@@ -1,0 +1,32 @@
+.xh-app {
+  .mc-settings-panel {
+    --xh-button-height: 40px;
+
+    .xh-panel__content {
+      padding: var(--xh-pad-double-px);
+      gap: var(--xh-pad-double-px);
+    }
+
+    &__about {
+      h2 {
+        color: var(--xh-orange);
+        font-weight: 400 !important;
+      }
+
+      p {
+        margin: 10px 0 20px 0 !important;
+        text-transform: unset !important;
+      }
+
+      a {
+        color: var(--xh-orange);
+      }
+
+      .xh-corp-logo {
+        display: block;
+        width: 150px;
+        margin: 10px auto;
+      }
+    }
+  }
+}

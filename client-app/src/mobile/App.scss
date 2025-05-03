@@ -7,6 +7,7 @@
   --grid-group-bg: var(--xh-intent-warning);
   --grid-group-text-color: white;
 
+  --mc-font-size-small-px: 12px;
   --mc-list-text-bg: rgba(255, 255, 255, 0.8);
 
   &.xh-dark {
@@ -63,19 +64,6 @@
     text-transform: uppercase;
   }
 
-  // Mobile tab switcher - taller, icons only - review in Hoist
-  .tabbar__content {
-    height: calc(100% - 61px);
-  }
-  .xh-tab-container .tabbar {
-    height: 60px;
-  }
-
-  .xh-tab-container .tabbar__button {
-    flex-direction: column;
-    height: 60px;
-  }
-
   //------------------------
   // List styles
   //------------------------
@@ -110,12 +98,18 @@
         }
       }
 
+      &--dateYear,
       &--member,
-      &--year,
-      &--dateYear {
+      &--year {
+        h1 {
+          font-size: 60px;
+        }
+      }
+
+      &--parent,
+      &--meeting {
         h1 {
           color: var(--xh-orange);
-          font-size: 60px;
         }
       }
 
@@ -145,8 +139,8 @@
       }
 
       &__notes {
-        font-size: 10px;
-        padding: 10px;
+        font-size: var(--mc-font-size-small-px);
+        padding: var(--xh-pad-px);
         margin: 10px 10px 0 10px;
         border-top: 1px solid var(--xh-orange);
 
@@ -157,7 +151,7 @@
     }
 
     &__section {
-      margin-bottom: var(--xh-pad-px);
+      //margin-bottom: var(--xh-pad-px);
       padding: var(--xh-pad-px);
 
       h2 {

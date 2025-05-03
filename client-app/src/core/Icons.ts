@@ -6,10 +6,20 @@ import {
     faUserMusic,
     faPeopleGroup
 } from '@fortawesome/pro-light-svg-icons';
+import {faTurntable as faTurntableThin} from '@fortawesome/pro-thin-svg-icons';
 import {faSpotify, faYoutube} from '@fortawesome/free-brands-svg-icons';
 import {Icon} from '@xh/hoist/icon';
 
-library.add(faAlbum, faTurntable, faListMusic, faUserMusic, faPeopleGroup, faSpotify, faYoutube);
+library.add(
+    faAlbum,
+    faTurntable,
+    faTurntableThin,
+    faListMusic,
+    faUserMusic,
+    faPeopleGroup,
+    faSpotify,
+    faYoutube
+);
 
 const prefix = 'fal';
 export const albumIcon = (opts = {}) => Icon.icon({iconName: 'album', prefix, ...opts});

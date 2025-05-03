@@ -2,6 +2,8 @@
   .mc-play-view {
     &__warning {
       color: var(--xh-intent-warning);
+      font-size: var(--mc-font-size-small-px);
+
       p {
         text-transform: unset;
       }

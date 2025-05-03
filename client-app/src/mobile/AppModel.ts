@@ -1,4 +1,3 @@
-import {placeholder} from '@xh/hoist/cmp/layout';
 import {TabContainerModel} from '@xh/hoist/cmp/tab';
 import {HoistAppModel, loadAllAsync, LoadSpec, XH} from '@xh/hoist/core';
 import {Icon} from '@xh/hoist/icon';
@@ -6,6 +5,7 @@ import {meetingIcon, memberIcon} from '../core/Icons';
 import {ClubService} from '../core/services/ClubService';
 import {meetingList} from './meeting/list/MeetingList';
 import {memberList} from './member/list/MemberList';
+import {settingsPanel} from './settings/SettingsPanel';
 
 export class AppModel extends HoistAppModel {
     static instance: AppModel;
@@ -17,29 +17,39 @@ export class AppModel extends HoistAppModel {
                 id: 'years',
                 title: null,
                 icon: Icon.calendar(),
-                content: () => meetingList({modelConfig: {dim: 'year', route: 'mobile.years'}})
+                content: () =>
+                    meetingList({
+                        modelConfig: {title: 'Years', dim: 'year', route: 'mobile.years'}
+                    })
             },
             {
                 id: 'meetings',
                 title: null,
                 icon: meetingIcon(),
                 content: () =>
-                    meetingList({modelConfig: {dim: 'dateYear', route: 'mobile.meetings'}})
+                    meetingList({
+                        modelConfig: {
+                            title: 'Meetings',
+                            dim: null,
+                            selectableDims: ['location'],
+                            route: 'mobile.meetings'
+                        }
+                    })
             },
             {
                 id: 'members',
                 title: null,
                 icon: memberIcon(),
-                content: () => memberList({modelConfig: {route: 'mobile.members'}})
+                content: () =>
+                    memberList({
+                        modelConfig: {route: 'mobile.members'}
+                    })
             },
             {
-                id: 'more',
+                id: 'settings',
                 title: null,
                 icon: Icon.ellipsisHorizontal(),
-                content: () =>
-                    placeholder({
-                        items: [Icon.settings(), 'TODO - settings, etc...']
-                    })
+                content: () => settingsPanel()
             }
         ]
     });
@@ -100,8 +110,8 @@ export class AppModel extends HoistAppModel {
                         ]
                     },
                     {
-                        name: 'more',
-                        path: '/more'
+                        name: 'settings',
+                        path: '/settings'
                     }
                 ]
             }
