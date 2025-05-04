@@ -180,7 +180,7 @@ export class ClubService extends HoistService {
             meetingYear: meeting.year,
             meetingDate: LocalDate.get(meeting.date),
 
-            member: raw.member ?? '???',
+            member: raw.member ?? (raw.bonus ? 'Bonus' : '???'),
             memberSlug: raw.member ? kebabCase(raw.member) : null,
             artist: raw.artist ?? '???',
             title: raw.title ?? '???',

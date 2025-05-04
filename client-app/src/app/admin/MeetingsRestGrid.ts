@@ -1,4 +1,3 @@
-import {AppModel} from '@xh/hoist/admin/AppModel';
 import {hoistCmp} from '@xh/hoist/core';
 import {textArea} from '@xh/hoist/desktop/cmp/input';
 import {
@@ -11,9 +10,7 @@ import {
 } from '@xh/hoist/desktop/cmp/rest';
 import {LocalDate} from '@xh/hoist/utils/datetime';
 
-export const meetingsRestGrid = hoistCmp.factory(() =>
-    restGrid({modelConfig: {...modelSpec, readonly: AppModel.readonly}})
-);
+export const meetingsRestGrid = hoistCmp.factory(() => restGrid({modelConfig: modelSpec}));
 
 const modelSpec: RestGridConfig = {
     enableExport: true,

@@ -1,4 +1,3 @@
-import {AppModel} from '@xh/hoist/admin/AppModel';
 import {creates, hoistCmp, HoistModel, LoadSpec, managed, XH} from '@xh/hoist/core';
 import {RecordActionSpec} from '@xh/hoist/data';
 import {panel} from '@xh/hoist/desktop/cmp/panel';
@@ -30,6 +29,7 @@ class MbEntitiesRestGridModel extends HoistModel {
 
         this.gridModel = new RestGridModel({
             enableExport: true,
+            colChooserModel: true,
             selModel: 'multiple',
             store: {
                 url: 'rest/entitiesAdmin',
@@ -68,7 +68,6 @@ class MbEntitiesRestGridModel extends HoistModel {
     refreshAction: RecordActionSpec = {
         text: 'Refresh from MB',
         icon: Icon.refresh(),
-        disabled: AppModel.readonly,
         recordsRequired: true,
         actionFn: ({selectedRecords}) => {
             this.refreshEntities(selectedRecords.map(it => it.id as number));

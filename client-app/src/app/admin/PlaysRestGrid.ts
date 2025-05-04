@@ -1,10 +1,10 @@
-import {AppModel} from '@xh/hoist/admin/AppModel';
 import {boolCheckCol, ColumnRenderer, ColumnSpec} from '@xh/hoist/cmp/grid';
 import {a} from '@xh/hoist/cmp/layout';
 import {creates, hoistCmp, HoistModel, LoadSpec, managed, PlainObject, XH} from '@xh/hoist/core';
 import {RecordActionSpec, Store} from '@xh/hoist/data';
 import {textArea} from '@xh/hoist/desktop/cmp/input';
 import {panel} from '@xh/hoist/desktop/cmp/panel';
+import {recordActionBar} from '@xh/hoist/desktop/cmp/record';
 import {
     addAction,
     deleteAction,
@@ -14,16 +14,38 @@ import {
     viewAction
 } from '@xh/hoist/desktop/cmp/rest';
 import {RestField} from '@xh/hoist/desktop/cmp/rest/data/RestField';
+import {toolbar} from '@xh/hoist/desktop/cmp/toolbar';
 import {Icon} from '@xh/hoist/icon';
 import {MINUTES} from '@xh/hoist/utils/datetime';
-import {kebabCase} from 'lodash';
+import {countBy, kebabCase} from 'lodash';
 import {albumIcon} from '../../core/Icons';
 
 export const playsRestGrid = hoistCmp.factory({
     model: creates(() => SongPlayRestGridModel),
-    render() {
+    render({model}) {
+        const {gridModel: restGridModel} = model,
+            {gridModel, selModel} = restGridModel;
         return panel({
             item: restGrid(),
+            bbar: toolbar(
+                recordActionBar({
+                    selModel,
+                    gridModel,
+                    actions: [model.enhancePlayAction, model.reEnhancePlayAction]
+                }),
+                '-',
+                recordActionBar({
+                    selModel,
+                    gridModel,
+                    actions: [model.addCoverArtAction, model.acceptMbEntitiesAction]
+                }),
+                '-',
+                recordActionBar({
+                    selModel,
+                    gridModel,
+                    actions: [model.markAsMismatchAction, model.markAsMismatchKeepArtistAction]
+                })
+            ),
             mask: 'onLoad'
         });
     }
@@ -39,7 +61,6 @@ class SongPlayRestGridModel extends HoistModel {
             mbCol: Partial<ColumnSpec> = {renderer: mbRenderer, rendererIsComplex: true};
 
         this.gridModel = new RestGridModel({
-            readonly: AppModel.readonly,
             colChooserModel: true,
             enableExport: true,
             selModel: 'multiple',
@@ -181,17 +202,7 @@ class SongPlayRestGridModel extends HoistModel {
                 {field: 'notes', formField: {item: textArea({height: 150})}}
             ],
             emptyText: 'No plays found...',
-            toolbarActions: [
-                addAction,
-                editAction,
-                deleteAction,
-                this.enhancePlayAction,
-                this.reEnhancePlayAction,
-                this.addCoverArtAction,
-                this.acceptMbEntitiesAction,
-                this.markAsMismatchAction,
-                this.markAsMismatchKeepArtistAction
-            ],
+            toolbarActions: [addAction, editAction, deleteAction],
             menuActions: [
                 addAction,
                 editAction,
@@ -200,8 +211,8 @@ class SongPlayRestGridModel extends HoistModel {
                 '-',
                 this.enhancePlayAction,
                 this.reEnhancePlayAction,
-                this.addCoverArtAction,
                 '-',
+                this.addCoverArtAction,
                 this.acceptMbEntitiesAction,
                 '-',
                 this.markAsMismatchAction,
@@ -219,8 +230,10 @@ class SongPlayRestGridModel extends HoistModel {
     //------------------
     enhancePlayAction: RecordActionSpec = {
         text: 'Enhance',
+        tooltip:
+            'Enhance play with MusicBrainz data for not yet resolved fields - will attempt to match artist, album, title and link up resolved MB entities only if not already set.',
         icon: Icon.magic(),
-        disabled: AppModel.readonly,
+        intent: 'primary',
         recordsRequired: true,
         actionFn: ({selectedRecords}) => {
             this.enhancePlays(
@@ -231,8 +244,11 @@ class SongPlayRestGridModel extends HoistModel {
     };
 
     reEnhancePlayAction: RecordActionSpec = {
-        text: 'Enhance (replace all existing MB IDs)',
-        disabled: AppModel.readonly,
+        text: 'Enhance (replace)',
+        tooltip:
+            'Enhance play with MusicBrainz data for all fields - will attempt to match artist, album, title and link up resolved MB entities.',
+        icon: Icon.reset(),
+        intent: 'primary',
         recordsRequired: true,
         actionFn: ({selectedRecords}) => {
             this.enhancePlays(
@@ -260,10 +276,63 @@ class SongPlayRestGridModel extends HoistModel {
         }
     }
 
+    addCoverArtAction: RecordActionSpec = {
+        text: 'Add cover art',
+        tooltip:
+            'Lookup the release / release-group in the Cover Art Archive and set full size and thumbnail URLs',
+        icon: albumIcon(),
+        intent: 'success',
+        recordsRequired: true,
+        actionFn: ({selectedRecords}) => {
+            this.addCoverArt(selectedRecords.map(it => it.id as number));
+        }
+    };
+
+    async addCoverArt(ids: number[]) {
+        try {
+            const results = await XH.postJson({
+                url: 'playsAdmin/addCoverArt',
+                body: {ids},
+                timeout: 5 * MINUTES
+            }).linkTo({
+                observer: this.loadModel,
+                message: 'Adding cover art...'
+            });
+
+            const {withCover, noCover} = countBy(results, it =>
+                it.coverArtUrl ? 'withCover' : 'noCover'
+            );
+            if (noCover && !withCover) {
+                XH.toast({
+                    message: 'No cover art found for any of the selected plays.',
+                    icon: albumIcon(),
+                    intent: 'danger'
+                });
+            } else if (withCover && !noCover) {
+                XH.toast({
+                    message: 'Cover art found for all selected plays.',
+                    icon: albumIcon(),
+                    intent: 'success'
+                });
+            } else {
+                XH.toast({
+                    message: `Cover art found for ${withCover} of ${withCover + noCover} selected plays.`,
+                    icon: albumIcon(),
+                    intent: 'warning'
+                });
+            }
+
+            await this.refreshAsync();
+        } catch (e) {
+            XH.handleException(e);
+        }
+    }
+
     acceptMbEntitiesAction: RecordActionSpec = {
         icon: Icon.checkCircle(),
-        text: 'Accept MB names/titles',
-        disabled: AppModel.readonly,
+        text: 'Accept MB Data',
+        tooltip: 'Copy over original artist/album/title with values resolved from MB data',
+        intent: 'success',
         recordsRequired: true,
         actionFn: ({selectedRecords}) => {
             this.acceptMbEntities(selectedRecords.map(it => it.id as number));
@@ -289,8 +358,9 @@ class SongPlayRestGridModel extends HoistModel {
 
     markAsMismatchAction: RecordActionSpec = {
         icon: Icon.slashedCircle(),
-        text: 'Mark as mismatch',
-        disabled: AppModel.readonly,
+        text: 'Mismatch',
+        tooltip: 'Further review required - block and remove all MB data',
+        intent: 'danger',
         recordsRequired: true,
         actionFn: ({selectedRecords}) => {
             this.markAsMismatch(
@@ -301,8 +371,10 @@ class SongPlayRestGridModel extends HoistModel {
     };
 
     markAsMismatchKeepArtistAction: RecordActionSpec = {
-        text: 'Mark as mismatch (keep artist)',
-        disabled: AppModel.readonly,
+        icon: Icon.slashedCircle(),
+        text: 'Mismatch (keep artist)',
+        tooltip: 'Further review required - block and remove all MB data except artist',
+        intent: 'danger',
         recordsRequired: true,
         actionFn: ({selectedRecords}) => {
             this.markAsMismatch(
@@ -320,34 +392,6 @@ class SongPlayRestGridModel extends HoistModel {
             }).linkTo({
                 observer: this.loadModel,
                 message: 'Marking plays as mismatch...'
-            });
-
-            console.log(results);
-            await this.refreshAsync();
-        } catch (e) {
-            XH.handleException(e);
-        }
-    }
-
-    addCoverArtAction: RecordActionSpec = {
-        text: 'Add cover art',
-        icon: albumIcon(),
-        disabled: AppModel.readonly,
-        recordsRequired: true,
-        actionFn: ({selectedRecords}) => {
-            this.addCoverArt(selectedRecords.map(it => it.id as number));
-        }
-    };
-
-    async addCoverArt(ids: number[]) {
-        try {
-            const results = await XH.postJson({
-                url: 'playsAdmin/addCoverArt',
-                body: {ids},
-                timeout: 5 * MINUTES
-            }).linkTo({
-                observer: this.loadModel,
-                message: 'Adding cover art...'
             });
 
             console.log(results);
