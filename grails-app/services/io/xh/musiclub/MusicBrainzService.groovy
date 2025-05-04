@@ -6,15 +6,17 @@ import groovy.transform.CompileDynamic
 import groovy.transform.NamedParam
 import groovy.transform.NamedVariant
 import io.xh.hoist.BaseService
+import io.xh.hoist.config.ConfigService
 import io.xh.hoist.http.JSONClient
 import io.xh.hoist.json.JSONSerializer
 import org.apache.hc.client5.http.classic.methods.HttpGet
 import org.apache.hc.core5.net.URIBuilder
 
-import static io.xh.hoist.util.Utils.isLocalDevelopment
 
 @GrailsCompileStatic
 class MusicBrainzService extends BaseService {
+
+    ConfigService configService
 
     private JSONClient _client
 
@@ -263,17 +265,16 @@ class MusicBrainzService extends BaseService {
             ignoreCurrent: ignoreCurrent
         )
 
-//        if (ret.mbEntity && !play.coverArtUrl) {
-//
-//        }
+        if (ret.mbEntity && !play.coverArtUrl) {
+            addCoverArt(play.id)
+        }
 
         return ret
-
     }
 
     @Transactional
     private ResResults resolveRelease(Play play, boolean ignoreCurrent, Integer minScore) {
-        resolveEntity(
+        def ret = resolveEntity(
             play: play,
             entityType: 'release',
             requiredProps: ['releaseGroupMbId'],
@@ -284,6 +285,13 @@ class MusicBrainzService extends BaseService {
             minScore: minScore,
             ignoreCurrent: ignoreCurrent
         )
+
+
+        if (ret.mbEntity && !play.coverArtUrl) {
+            addCoverArt(play.id)
+        }
+
+        return ret
     }
 
     @Transactional
@@ -546,7 +554,7 @@ class MusicBrainzService extends BaseService {
     }
 
     private getBaseApiUri() {
-        return isLocalDevelopment ? "http://localhost:5000/ws/2/" : "https://musicbrainz.org/ws/2/"
+        return configService.getBool('useLocalMBAPI', false) ? "http://localhost:5000/ws/2/" : "https://musicbrainz.org/ws/2/"
     }
 
     private JSONClient getClient() {

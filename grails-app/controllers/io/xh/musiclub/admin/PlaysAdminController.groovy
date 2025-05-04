@@ -48,15 +48,17 @@ class PlaysAdminController extends RestController {
     }
 
     def lookupData() {
+        def entityLookups = getAllEntityLookups()
+
         renderJSON(
             members: members,
             meetings: Meeting.list().collect {
                 [value: it.id, label: it.displayName]
             },
-            artists: getLookup('artist'),
-            releaseGroups: getLookup('releaseGroup'),
-            releases: getLookup('release'),
-            recordings: getLookup('recording'),
+            artists: entityLookups.artist ?: [],
+            releaseGroups: entityLookups.releaseGroup ?: [],
+            releases: entityLookups.release ?: [],
+            recordings: entityLookups.recording ?: [],
             mbStatuses: ['UNMATCHED', 'PARTIALLY_MATCHED', 'MATCHED', 'MISMATCH']
         )
     }
@@ -71,14 +73,27 @@ class PlaysAdminController extends RestController {
     //------------------
     // Implementation
     //------------------
-    private List<Map> getLookup(String entity) {
-        def list = MbEntity.findAllByType(entity)
-        return list.collect {
-            [
-                value: it.mbId,
-                label: it.displayName
-            ]
-        }.sort { it.label }
+    private Map<String, List<Map>> getAllEntityLookups() {
+        // Fetch all entities with just the necessary fields in a single query
+        def results = MbEntity.createCriteria().list {
+            projections {
+                property('type')
+                property('mbId')
+                property('name')
+            }
+        }
+
+        // Group results by type
+        def groupedResults = results.groupBy { it[0] }
+
+        // Format results into lookup maps
+        return groupedResults.collectEntries { type, entities ->
+            def formattedEntities = entities.collect { entity ->
+                [value: entity[1], label: entity[2]]
+            }.sort { it.label }
+
+            [(type): formattedEntities]
+        }
     }
 
     private Set<String> getMembers() {
