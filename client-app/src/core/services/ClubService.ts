@@ -1,14 +1,23 @@
 import {HoistService, LoadSpec, PlainObject, XH} from '@xh/hoist/core';
 import {FieldSpec} from '@xh/hoist/data';
-import {observable, runInAction} from '@xh/hoist/mobx';
+import {action, makeObservable, observable, runInAction} from '@xh/hoist/mobx';
 import {LocalDate} from '@xh/hoist/utils/datetime';
 import {fromPairs, kebabCase, sortBy, values} from 'lodash';
 import {Meeting, MeetingDim, MeetingGroup, Member, Play, PlayWithMbEntities} from '../Types';
 
 export class ClubService extends HoistService {
     @observable.ref meetings: Meeting[] = [];
-    @observable.ref plays: Play[] = [];
     @observable.ref members: Member[] = [];
+
+    @observable.ref plays: Play[] = [];
+    @observable.ref playsBySlug: Map<string, Play> = new Map();
+
+    @observable.ref
+    bookmarkSlugs: string[] = XH.getPref('bookmarks');
+
+    get bookmarks(): Play[] {
+        return this.bookmarkSlugs.map(it => this.getPlay(it)).filter(it => it);
+    }
 
     get playFields(): FieldSpec[] {
         return [
@@ -57,7 +66,7 @@ export class ClubService extends HoistService {
     }
 
     getPlay(slug: string): Play {
-        return slug ? this.plays.find(it => it.slug === slug) : null;
+        return slug ? this.playsBySlug.get(slug) : null;
     }
 
     getMember(slug: string): Member {
@@ -77,6 +86,34 @@ export class ClubService extends HoistService {
             mbRelease: resp.mbRelease,
             mbRecording: resp.mbRecording
         };
+    }
+
+    isBookmarked(play: Play): boolean {
+        return this.bookmarkSlugs.includes(play.slug);
+    }
+
+    toggleBookmark(play: Play) {
+        this.isBookmarked(play) ? this.removeBookmark(play) : this.addBookmark(play);
+        console.log('play is now bookmarked?', this.isBookmarked(play));
+    }
+
+    @action
+    addBookmark(play: Play) {
+        if (!this.bookmarkSlugs.includes(play.slug)) {
+            this.bookmarkSlugs = [...this.bookmarkSlugs, play.slug].sort();
+            XH.setPref('bookmarks', this.bookmarkSlugs);
+        }
+    }
+
+    @action
+    removeBookmark(play: Play) {
+        this.bookmarkSlugs = this.bookmarkSlugs.filter(it => it !== play.slug);
+        XH.setPref('bookmarks', this.bookmarkSlugs);
+    }
+
+    constructor() {
+        super();
+        makeObservable(this);
     }
 
     override async initAsync(): Promise<void> {
@@ -135,10 +172,14 @@ export class ClubService extends HoistService {
                 member.playCount++;
             });
 
+            const playsBySlug = new Map<string, Play>();
+            plays.forEach(play => playsBySlug.set(play.slug, play));
+
             // Flush into caches
             runInAction(() => {
                 this.meetings = meetings;
                 this.plays = plays;
+                this.playsBySlug = playsBySlug;
                 this.members = values(membersBySlug);
             });
             this.logInfo(`Loaded ${meetings.length} meetings and ${plays.length} plays`);

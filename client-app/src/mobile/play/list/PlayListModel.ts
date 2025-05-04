@@ -9,7 +9,10 @@ import {Play} from '../../../core/Types';
 export class PlayListModel extends HoistModel {
     @managed dataViewModel: DataViewModel;
 
-    constructor({parentDim}: {parentDim: 'meeting' | 'member'}) {
+    constructor({
+        parentDim,
+        groupBy
+    }: {parentDim?: 'meeting' | 'member' | null; groupBy?: string} = {}) {
         super();
 
         this.dataViewModel = new DataViewModel({
@@ -17,7 +20,7 @@ export class PlayListModel extends HoistModel {
                 fields: XH.clubService.playFields
             },
             sortBy: ['meetingDate', 'slug'],
-            groupBy: 'bonusDisplay',
+            groupBy,
             showHover: false,
             itemHeight: 130,
             selModel: null,
@@ -30,7 +33,11 @@ export class PlayListModel extends HoistModel {
                         div({
                             className: 'mc-list__item__data',
                             items: [
-                                h2(parentDim === 'meeting' ? play.member : play.meetingName),
+                                parentDim === 'meeting'
+                                    ? h2(play.member)
+                                    : parentDim === 'member'
+                                      ? h2(play.meetingName)
+                                      : h2(play.member, ' @ ', play.meetingName),
                                 p(trackIcon(), play.title),
                                 p(artistIcon(), play.artist),
                                 p(albumIcon(), play.album)

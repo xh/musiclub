@@ -141,9 +141,10 @@
 
       &__notes {
         font-size: var(--mc-font-size-small-px);
-        padding: var(--xh-pad-px);
-        margin: 10px 10px 0 10px;
-        border-top: 1px solid var(--xh-orange);
+        padding: 10px;
+        margin: 20px 10px 0 10px;
+        border-radius: 5px;
+        background-color: var(--xh-bg-alt);
 
         p {
           text-transform: unset;

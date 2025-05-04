@@ -92,7 +92,14 @@ class BootStrap implements LogSupport {
     }
 
     private void ensureRequiredPrefsCreated() {
-        prefService.ensureRequiredPrefsCreated([:])
+        prefService.ensureRequiredPrefsCreated([
+            bookmarks: [
+                type        : 'json',
+                defaultValue: [],
+                groupName   : 'Musiclub',
+                note        : 'List of bookmarked play slugs.'
+            ]
+        ])
     }
 
     private void ensureRequiredRolesCreated() {

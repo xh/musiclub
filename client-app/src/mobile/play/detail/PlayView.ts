@@ -1,10 +1,11 @@
-import {div, h1, h2, img, p, placeholder, table, tbody, td, tr} from '@xh/hoist/cmp/layout';
+import {div, h1, h2, hbox, img, p, placeholder, table, tbody, td, tr} from '@xh/hoist/cmp/layout';
 import {markdown} from '@xh/hoist/cmp/markdown';
-import {creates, hoistCmp} from '@xh/hoist/core';
+import {creates, hoistCmp, XH} from '@xh/hoist/core';
 import {Icon} from '@xh/hoist/icon';
+import {button} from '@xh/hoist/mobile/cmp/button';
 import {compact, isEmpty, uniq} from 'lodash';
-import {linkTags} from '../../cmp/LinkTags';
 import {albumIcon, artistIcon} from '../../../core/Icons';
+import {linkTags} from '../../cmp/LinkTags';
 import {PlayModel} from './PlayModel';
 import './Play.scss';
 
@@ -17,18 +18,46 @@ export const playView = hoistCmp.factory({
         const {play} = model;
         if (!play) return placeholder(Icon.error(), `Unknown play [${playSlug}]`);
 
+        const bookmarked = XH.clubService.isBookmarked(play);
+        console.log('bookmarked', bookmarked);
+
+        const notes =
+            "I first heard this album with my uncle when I was 10 years old. I didn't like it at first, but then I started to appreciate it. It was a long time ago, but I still remember the feeling of listening to it for the first time. It was a great experience.\n\nOnce, I knew what it was to truly be alive.";
+
         return div({
             className,
             items: [
                 div({
                     className: 'mc-detail-view__header',
                     items: [
-                        h1(play.title),
-                        h2(`${play.member} @ ${play.meetingName}`),
+                        hbox({
+                            alignItems: 'stretch',
+                            items: [
+                                div({
+                                    style: {flex: 1},
+                                    items: [
+                                        h1(play.title),
+                                        h2(`${play.member} @ ${play.meetingName}`)
+                                    ]
+                                }),
+                                button({
+                                    icon: bookmarked
+                                        ? Icon.bookmark({prefix: 'fas', size: 'lg'})
+                                        : Icon.bookmark({prefix: 'fat', size: 'lg'}),
+                                    intent: bookmarked ? 'warning' : null,
+                                    style: {flex: 'none'},
+                                    width: 60,
+                                    height: 60,
+                                    minimal: true,
+                                    onClick: () => XH.clubService.toggleBookmark(play)
+                                })
+                            ]
+                        }),
+
                         div({
                             className: 'mc-detail-view__header__notes',
-                            item: markdown({content: play.notes}),
-                            omit: !play.notes
+                            item: markdown({content: notes})
+                            // omit: !play.notes
                         })
                     ]
                 }),

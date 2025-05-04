@@ -3,6 +3,7 @@ import {HoistAppModel, loadAllAsync, LoadSpec, XH} from '@xh/hoist/core';
 import {Icon} from '@xh/hoist/icon';
 import {memberIcon} from '../core/Icons';
 import {ClubService} from '../core/services/ClubService';
+import {bookmarkList} from './bookmarks/BookmarkList';
 import {meetingList} from './meeting/list/MeetingList';
 import {memberList} from './member/list/MemberList';
 import {settingsPanel} from './settings/SettingsPanel';
@@ -32,6 +33,12 @@ export class AppModel extends HoistAppModel {
                     memberList({
                         modelConfig: {route: 'mobile.members'}
                     })
+            },
+            {
+                id: 'bookmarks',
+                title: null,
+                icon: Icon.bookmark(),
+                content: () => bookmarkList()
             },
             {
                 id: 'settings',
@@ -84,6 +91,16 @@ export class AppModel extends HoistAppModel {
                     {
                         name: 'settings',
                         path: '/settings'
+                    },
+                    {
+                        name: 'bookmarks',
+                        path: '/bookmarks',
+                        children: [
+                            {
+                                name: 'play',
+                                path: '/:playSlug'
+                            }
+                        ]
                     }
                 ]
             }

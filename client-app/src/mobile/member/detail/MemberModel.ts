@@ -15,7 +15,7 @@ export class MemberModel extends HoistModel {
         super();
         makeObservable(this);
 
-        this.playListModel = new PlayListModel({parentDim: 'member'});
+        this.playListModel = new PlayListModel({parentDim: 'member', groupBy: 'bonusDisplay'});
 
         this.addReaction({
             track: () => this.member,
