@@ -1,4 +1,6 @@
+import {br, placeholder} from '@xh/hoist/cmp/layout';
 import {HoistModel, LoadSpec, managed, XH} from '@xh/hoist/core';
+import {Icon} from '@xh/hoist/icon';
 import {NavigatorModel} from '@xh/hoist/mobile/cmp/navigator';
 import {playView} from '../play/detail/PlayView';
 import {PlayListModel} from '../play/list/PlayListModel';
@@ -20,7 +22,16 @@ export class BookmarkListModel extends HoistModel {
             ]
         });
 
-        this.playListModel = new PlayListModel();
+        this.playListModel = new PlayListModel({
+            dataViewConfig: {
+                emptyText: placeholder(
+                    Icon.bookmark({prefix: 'fat'}),
+                    'Bookmark your favorite plays',
+                    br(),
+                    'to find them again here.'
+                )
+            }
+        });
 
         this.addReaction({
             track: () => XH.clubService.bookmarks,

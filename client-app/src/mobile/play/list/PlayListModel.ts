@@ -1,4 +1,4 @@
-import {DataViewModel} from '@xh/hoist/cmp/dataview';
+import {DataViewConfig, DataViewModel} from '@xh/hoist/cmp/dataview';
 import {GridSorterLike} from '@xh/hoist/cmp/grid';
 import {div, h2, hbox, img, p} from '@xh/hoist/cmp/layout';
 import {HoistModel, managed, Some, XH} from '@xh/hoist/core';
@@ -11,8 +11,13 @@ export class PlayListModel extends HoistModel {
 
     constructor({
         parentDim,
-        groupBy
-    }: {parentDim?: 'meeting' | 'member' | null; groupBy?: string} = {}) {
+        groupBy,
+        dataViewConfig
+    }: {
+        parentDim?: 'meeting' | 'member' | null;
+        groupBy?: string;
+        dataViewConfig?: Partial<DataViewConfig>;
+    } = {}) {
         super();
 
         this.dataViewModel = new DataViewModel({
@@ -56,7 +61,8 @@ export class PlayListModel extends HoistModel {
             groupSortFn: (a, b, field, {gridModel}) => {
                 return gridModel.defaultGroupSortFn(b, a);
             },
-            onRowClicked: ({data}) => this.onRowClicked(data)
+            onRowClicked: ({data}) => this.onRowClicked(data),
+            ...dataViewConfig
         });
     }
 
