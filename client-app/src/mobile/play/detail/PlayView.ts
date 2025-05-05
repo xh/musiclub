@@ -18,11 +18,8 @@ export const playView = hoistCmp.factory({
         const {play} = model;
         if (!play) return placeholder(Icon.error(), `Unknown play [${playSlug}]`);
 
-        const bookmarked = XH.clubService.isBookmarked(play);
-        console.log('bookmarked', bookmarked);
-
-        const notes =
-            "I first heard this album with my uncle when I was 10 years old. I didn't like it at first, but then I started to appreciate it. It was a long time ago, but I still remember the feeling of listening to it for the first time. It was a great experience.\n\nOnce, I knew what it was to truly be alive.";
+        const bookmarked = XH.clubService.isBookmarked(play),
+            {notes} = play;
 
         return div({
             className,
@@ -56,8 +53,8 @@ export const playView = hoistCmp.factory({
 
                         div({
                             className: 'mc-detail-view__header__notes',
-                            item: markdown({content: notes})
-                            // omit: !play.notes
+                            item: markdown({content: notes}),
+                            omit: !notes
                         })
                     ]
                 }),
