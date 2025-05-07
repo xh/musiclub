@@ -15,6 +15,7 @@ import {NavigatorModel} from '@xh/hoist/mobile/cmp/navigator';
 import {action, bindable, computed, makeObservable} from '@xh/hoist/mobx';
 import {wait} from '@xh/hoist/promise';
 import {pluralize} from '@xh/hoist/utils/js';
+import {orderBy} from 'lodash';
 import {meetingGroupItem} from '../../../core/cmp/renderers/MeetingGroupItem';
 import {meetingItem} from '../../../core/cmp/renderers/MeetingItem';
 import {Meeting, MeetingDim, MeetingGroup} from '../../../core/Types';
@@ -210,13 +211,21 @@ export class MeetingListModel extends HoistModel {
                 [rec.id]: expanded
             };
 
+            // Locate a newly expanded child record a few rows down in the group and ensure visible.
+            // Avoids a situation where the user has expanded a group at the bottom of the screen
+            // and the newly-expanded children are not visible, making the list seem broken.
             if (expanded) {
                 wait().then(() => {
-                    const meetingRec = dataViewModel.store.allRecords.find(otherRec => {
+                    let meetingRecs = dataViewModel.store.allRecords.filter(otherRec => {
                         const {groupId, type} = otherRec.data as RowData;
                         return groupId === rec.id && type === 'meeting';
                     });
-                    dataViewModel.gridModel.ensureRecordsVisibleAsync(meetingRec);
+
+                    meetingRecs = orderBy(meetingRecs, 'sortKey', this.sort);
+
+                    // Scroll to show up to three children, or the last one if fewer.
+                    const idxToShow = Math.min(meetingRecs.length - 1, 2);
+                    dataViewModel.gridModel.ensureRecordsVisibleAsync(meetingRecs[idxToShow]);
                 });
             }
         }
