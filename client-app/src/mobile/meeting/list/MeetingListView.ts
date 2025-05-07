@@ -37,6 +37,7 @@ export const meetingListView = hoistCmp.factory({
                 button({
                     icon: sort == 'asc' ? Icon.chevronUp() : Icon.chevronDown({prefix: 'fal'}),
                     outlined: true,
+                    disabled: model.dim === 'location',
                     onClick: () => model.toggleSort()
                 }),
                 filler()

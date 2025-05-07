@@ -35,8 +35,18 @@ export class MeetingListModel extends HoistModel {
     ];
 
     @bindable @persist dim: MeetingDim = 'year';
-    @bindable @persist sort: 'asc' | 'desc' = 'asc';
     @bindable.ref expandedGroups: Record<string, boolean> = {};
+
+    @bindable @persist sort: 'asc' | 'desc' = 'desc';
+
+    /**
+     * Flip sort on locations so we can have our three dims use the same default sort order
+     * and yet yield desired results: we want latest meetings and years to top as they are more
+     * relevant/interesting/complete, but it would be silly to sort location desc.
+     */
+    get effectiveSort(): 'asc' | 'desc' {
+        return this.sort === 'desc' && this.dim === 'location' ? 'asc' : this.sort;
+    }
 
     get title(): string {
         return pluralize(this.dim);
@@ -69,7 +79,7 @@ export class MeetingListModel extends HoistModel {
                     {name: 'sortKey', type: 'string'}
                 ]
             },
-            sortBy: `sortKey|${this.sort}`,
+            sortBy: `sortKey|${this.effectiveSort}`,
             renderer: (v, {record}) => {
                 const row = record.data as RowData,
                     {type, meetingGroup, meeting, isChild, parentDim} = row;
@@ -97,9 +107,9 @@ export class MeetingListModel extends HoistModel {
                 }
             },
             {
-                track: () => this.sort,
-                run: () => {
-                    this.dataViewModel.setSortBy(`sortKey|${this.sort}`);
+                track: () => this.effectiveSort,
+                run: ef => {
+                    this.dataViewModel.setSortBy(`sortKey|${ef}`);
                 }
             },
             {
