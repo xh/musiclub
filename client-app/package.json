@@ -44,6 +44,7 @@
     "@fortawesome/free-brands-svg-icons": "^6.7.2",
     "@xh/hoist": "73.0.0-SNAPSHOT.1746195895077",
     "core-js": "3.x",
+    "flexsearch": "~0.8.158",
     "highcharts": "11.x",
     "lodash": "4.x",
     "moment": "2.x",

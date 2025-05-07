@@ -1,11 +1,11 @@
 import {DataViewModel} from '@xh/hoist/cmp/dataview';
-import {div, h1, hbox, span} from '@xh/hoist/cmp/layout';
 import {HoistModel, LoadSpec, managed, XH} from '@xh/hoist/core';
 import {StoreRecord} from '@xh/hoist/data';
 import {NavigatorModel} from '@xh/hoist/mobile/cmp/navigator';
 import {action, makeObservable} from '@xh/hoist/mobx';
+import {memberItem} from '../../../core/cmp/renderers/MemberItem';
 import {Member} from '../../../core/Types';
-import {countTiles} from '../../cmp/CountTiles';
+import {DATA_VIEW_CONF} from '../../cmp/Utils';
 import {playView} from '../../play/detail/PlayView';
 import {memberView} from '../detail/MemberView';
 import {memberListView} from './MemberListView';
@@ -17,47 +17,30 @@ export class MemberListModel extends HoistModel {
     @managed navigatorModel: NavigatorModel;
     @managed dataViewModel: DataViewModel;
 
-    constructor({route}: {route: string}) {
+    constructor() {
         super();
         makeObservable(this);
 
         this.navigatorModel = new NavigatorModel({
             track: true,
-            route,
+            route: 'mobile.members',
             pages: [
-                {id: 'members', content: () => memberListView()},
+                {id: 'members', content: memberListView},
                 {id: 'member', content: memberView},
                 {id: 'play', content: playView}
             ]
         });
 
         this.dataViewModel = new DataViewModel({
+            ...DATA_VIEW_CONF,
             store: {
                 idSpec: 'slug',
-                fields: [
-                    {name: 'name', type: 'string'},
-                    {name: 'firstMeetingDate', type: 'localDate'},
-                    {name: 'meetingCount', type: 'number'},
-                    {name: 'playCount', type: 'number'}
-                ]
+                fields: [{name: 'name', type: 'string'}]
             },
             sortBy: `name`,
-            selModel: null,
-            showHover: false,
-            itemHeight: 100,
             renderer: (v, {record}) => {
-                const member = record.data as Member;
-                return hbox({
-                    className: `mc-list__item mc-list__item--member`,
-                    items: [
-                        div({
-                            className: 'mc-list__item__data',
-                            items: [h1(span(member.name))]
-                        }),
-                        countTiles({
-                            count: member.meetingCount
-                        })
-                    ]
+                return memberItem({
+                    member: record.raw as Member
                 });
             },
             onRowClicked: ({data}) => this.onRowClicked(data)

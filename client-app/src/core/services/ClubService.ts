@@ -152,6 +152,7 @@ export class ClubService extends HoistService {
 
                 if (!membersBySlug[memberSlug]) {
                     membersBySlug[memberSlug] = {
+                        type: 'member',
                         slug: memberSlug,
                         name,
                         firstMeetingDate: play.meetingDate,
@@ -197,6 +198,7 @@ export class ClubService extends HoistService {
     private processRawMeeting(raw: PlainObject): Meeting {
         const date = LocalDate.get(raw.date);
         return {
+            type: 'meeting',
             id: raw.id,
             slug: raw.slug,
             name: `#${raw.slug} - ${raw.year}`,
@@ -212,6 +214,7 @@ export class ClubService extends HoistService {
     private processRawPlay(raw: PlainObject): Play {
         const {meeting} = raw;
         return {
+            type: 'play',
             id: raw.id,
             slug: raw.slug,
 

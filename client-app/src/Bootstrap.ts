@@ -23,6 +23,7 @@ import highchartsOfflineExporting from 'highcharts/modules/offline-exporting';
 import highchartsTreeGraph from 'highcharts/modules/treegraph';
 import highchartsTree from 'highcharts/modules/treemap';
 import {ClubService} from './core/services/ClubService';
+import {SearchService} from './core/services/SearchService';
 
 //------------------
 // Service Declarations
@@ -31,6 +32,7 @@ declare module '@xh/hoist/core' {
     // Merge interface with XHApi class to include injected services.
     export interface XHApi {
         clubService: ClubService;
+        searchService: SearchService;
     }
     // @ts-ignore - Help IntelliJ recognize uses of injected service methods on the `XH` singleton.
     export const XH: XHApi;

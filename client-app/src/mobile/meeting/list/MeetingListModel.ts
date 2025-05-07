@@ -1,5 +1,4 @@
 import {DataViewModel} from '@xh/hoist/cmp/dataview';
-import {div, h1, h2, hbox, span} from '@xh/hoist/cmp/layout';
 import {
     HoistModel,
     LoadSpec,
@@ -14,12 +13,14 @@ import {Icon} from '@xh/hoist/icon';
 import {NavigatorModel} from '@xh/hoist/mobile/cmp/navigator';
 import {action, bindable, makeObservable} from '@xh/hoist/mobx';
 import {wait} from '@xh/hoist/promise';
-import {Meeting, MeetingDim} from '../../../core/Types';
-import {countTiles} from '../../cmp/CountTiles';
+import {pluralize} from '@xh/hoist/utils/js';
+import {meetingGroupItem} from '../../../core/cmp/renderers/MeetingGroupItem';
+import {meetingItem} from '../../../core/cmp/renderers/MeetingItem';
+import {Meeting, MeetingDim, MeetingGroup} from '../../../core/Types';
+import {DATA_VIEW_CONF} from '../../cmp/Utils';
 import {playView} from '../../play/detail/PlayView';
 import {meetingView} from '../detail/MeetingView';
 import {meetingListView} from './MeetingListView';
-import {pluralize} from '@xh/hoist/utils/js';
 
 export class MeetingListModel extends HoistModel {
     override persistWith: PersistOptions = {localStorageKey: 'meetingList'};
@@ -34,71 +35,55 @@ export class MeetingListModel extends HoistModel {
     ];
 
     @bindable @persist dim: MeetingDim = 'year';
-    @bindable @persist sort: 'asc' | 'desc';
+    @bindable @persist sort: 'asc' | 'desc' = 'asc';
     @bindable.ref expandedGroups: Record<string, boolean> = {};
 
     get title(): string {
         return pluralize(this.dim);
     }
 
-    constructor({route, sort}: {route: string; sort?: 'asc' | 'desc'}) {
+    constructor() {
         super();
         makeObservable(this);
 
-        this.sort = sort ?? 'asc';
-
-        // mobile.years => years
-        const listViewRoute = route.substring(route.lastIndexOf('.') + 1);
-
         this.navigatorModel = new NavigatorModel({
             track: true,
-            route,
+            route: 'mobile.meetings',
             pages: [
-                {id: listViewRoute, content: () => meetingListView()},
+                {id: 'meetings', content: () => meetingListView()},
                 {id: 'meeting', content: meetingView},
                 {id: 'play', content: playView}
             ]
         });
 
         this.dataViewModel = new DataViewModel({
+            ...DATA_VIEW_CONF,
             store: {
                 fields: [
+                    {name: 'type', type: 'string'},
+                    {name: 'meetingGroup', type: 'auto'},
+                    {name: 'meeting', type: 'auto'},
                     {name: 'groupId', type: 'string'},
-                    {name: 'title', type: 'string'},
-                    {name: 'subtitle', type: 'string'},
-                    {name: 'dimension', type: 'string'},
-                    {name: 'sortKey', type: 'string'},
-                    {name: 'count', type: 'number', defaultValue: 0},
-                    {name: 'bonusCount', type: 'number', defaultValue: 0},
-                    {name: 'isChild', type: 'bool'}
+                    {name: 'parentDim', type: 'string'},
+                    {name: 'isChild', type: 'bool'},
+                    {name: 'sortKey', type: 'string'}
                 ]
             },
             sortBy: `sortKey|${this.sort}`,
-            selModel: null,
-            showHover: false,
-            itemHeight: 100,
             renderer: (v, {record}) => {
-                const row = record.data as RowData;
-                return hbox({
-                    className: `mc-list__item mc-list__item--${row.dimension} ${row.isChild ? 'mc-list__item--child' : 'mc-list__item--parent'}`,
-                    items: [
-                        div({
-                            className: 'mc-list__item__data',
-                            items: [
-                                h1(span(row.title)),
-                                h2({
-                                    item: span(row.subtitle),
-                                    omit: !row.subtitle
-                                })
-                            ]
-                        }),
-                        countTiles({
-                            count: row.count,
-                            bonusCount: row.bonusCount,
-                            big: row.dimension !== 'meeting'
-                        })
-                    ]
-                });
+                const row = record.data as RowData,
+                    {type, meetingGroup, meeting, isChild, parentDim} = row;
+
+                return type === 'meetingGroup'
+                    ? meetingGroupItem({
+                          meetingGroup,
+                          isChild
+                      })
+                    : meetingItem({
+                          meeting,
+                          isChild,
+                          parentDim
+                      });
             },
             onRowClicked: ({data}) => this.onRowClicked(data)
         });
@@ -129,7 +114,7 @@ export class MeetingListModel extends HoistModel {
     }
 
     override async doLoadAsync(loadSpec: LoadSpec) {
-        const {dim} = this,
+        const {dim, dataViewModel} = this,
             data: RowData[] = [];
 
         if (dim != 'meeting') {
@@ -138,25 +123,22 @@ export class MeetingListModel extends HoistModel {
                 const groupId = `${grp.dimension}-${grp.id}`;
                 data.push(
                     {
+                        type: 'meetingGroup',
+                        meetingGroup: grp,
                         id: groupId,
                         groupId,
-                        title: grp.title,
-                        dimension: grp.dimension,
-                        count: grp.meetingCount,
-                        sortKey: `[${groupId}]`,
-                        isChild: false
+                        isChild: false,
+                        sortKey: `[${groupId}]`
                     },
                     ...grp.meetings.map(mtg => {
                         return {
+                            type: 'meeting' as const,
+                            meeting: mtg,
                             id: mtg.slug,
                             groupId: groupId,
-                            title: this.getMeetingTitle(mtg),
-                            subtitle: this.getMeetingSubtitle(mtg),
-                            dimension: 'meeting' as const,
-                            count: mtg.plays.filter(it => !it.bonus).length,
-                            bonusCount: mtg.plays.filter(it => it.bonus).length,
-                            sortKey: `[${groupId}][${mtg.date}]`,
-                            isChild: true
+                            parentDim: dim,
+                            isChild: true,
+                            sortKey: `[${groupId}][${mtg.date}]`
                         };
                     })
                 );
@@ -165,19 +147,17 @@ export class MeetingListModel extends HoistModel {
             const meetings = XH.clubService.meetings;
             meetings.forEach(mtg => {
                 data.push({
+                    type: 'meeting',
+                    meeting: mtg,
                     id: mtg.id,
                     groupId: mtg.slug,
-                    title: this.getMeetingTitle(mtg),
-                    subtitle: this.getMeetingSubtitle(mtg),
-                    dimension: 'meeting' as const,
-                    count: mtg.plays.filter(it => !it.bonus).length,
-                    bonusCount: mtg.plays.filter(it => it.bonus).length,
-                    sortKey: mtg.date.toString(),
-                    isChild: false
+                    isChild: false,
+                    sortKey: mtg.date.toString()
                 });
             });
         }
-        this.dataViewModel.loadData(data);
+
+        dataViewModel.loadData(data);
     }
 
     getMeetingTitle(mtg: Meeting) {
@@ -195,21 +175,19 @@ export class MeetingListModel extends HoistModel {
 
     private updateFilter() {
         this.dataViewModel.store.setFilter(rec => {
-            return (
-                this.dim === 'meeting' ||
-                rec.data.dimension !== 'meeting' ||
-                this.expandedGroups[rec.data.groupId] === true
-            );
+            return !rec.data.isChild || this.expandedGroups[rec.data.groupId] === true;
         });
     }
 
     @action
     private onRowClicked(rec: StoreRecord) {
-        const {dataViewModel, expandedGroups: grps} = this,
-            dim: MeetingDim = rec?.data.dimension;
+        if (!rec) return;
 
-        if (dim === 'meeting') {
-            XH.appendRoute('meeting', {meetingSlug: rec.id.toString()});
+        const {dataViewModel, expandedGroups: grps} = this,
+            {type, meeting} = rec.data as RowData;
+
+        if (type === 'meeting') {
+            XH.appendRoute('meeting', {meetingSlug: meeting.slug});
         } else {
             const expanded = !grps[rec.id];
             this.expandedGroups = {
@@ -219,9 +197,10 @@ export class MeetingListModel extends HoistModel {
 
             if (expanded) {
                 wait().then(() => {
-                    const meetingRec = dataViewModel.store.records.find(
-                        it => it.data.groupId === rec.id && it.data.dimension === 'meeting'
-                    );
+                    const meetingRec = dataViewModel.store.allRecords.find(otherRec => {
+                        const {groupId, type} = otherRec.data as RowData;
+                        return groupId === rec.id && type === 'meeting';
+                    });
                     dataViewModel.gridModel.ensureRecordsVisibleAsync(meetingRec);
                 });
             }
@@ -230,13 +209,12 @@ export class MeetingListModel extends HoistModel {
 }
 
 interface RowData {
+    type: 'meetingGroup' | 'meeting';
+    meetingGroup?: MeetingGroup;
+    meeting?: Meeting;
     id: string | number;
-    isChild: boolean;
     groupId: string;
-    title: string;
-    subtitle?: string;
-    dimension: MeetingDim;
-    count: number;
-    bonusCount?: number;
+    parentDim?: MeetingDim;
+    isChild: boolean;
     sortKey: string;
 }

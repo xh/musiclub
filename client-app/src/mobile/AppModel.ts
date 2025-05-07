@@ -3,9 +3,11 @@ import {HoistAppModel, loadAllAsync, LoadSpec, XH} from '@xh/hoist/core';
 import {Icon} from '@xh/hoist/icon';
 import {memberIcon} from '../core/Icons';
 import {ClubService} from '../core/services/ClubService';
+import {SearchService} from '../core/services/SearchService';
 import {bookmarkList} from './bookmarks/BookmarkList';
 import {meetingList} from './meeting/list/MeetingList';
 import {memberList} from './member/list/MemberList';
+import {searchList} from './search/SearchList';
 import {settingsPanel} from './settings/SettingsPanel';
 
 export class AppModel extends HoistAppModel {
@@ -18,33 +20,31 @@ export class AppModel extends HoistAppModel {
                 id: 'meetings',
                 title: null,
                 icon: Icon.calendar(),
-                content: () =>
-                    meetingList({
-                        modelConfig: {
-                            route: 'mobile.meetings'
-                        }
-                    })
+                content: meetingList
             },
             {
                 id: 'members',
                 title: null,
                 icon: memberIcon(),
-                content: () =>
-                    memberList({
-                        modelConfig: {route: 'mobile.members'}
-                    })
+                content: memberList
+            },
+            {
+                id: 'search',
+                title: null,
+                icon: Icon.search(),
+                content: searchList
             },
             {
                 id: 'bookmarks',
                 title: null,
                 icon: Icon.bookmark(),
-                content: () => bookmarkList()
+                content: bookmarkList
             },
             {
                 id: 'settings',
                 title: null,
                 icon: Icon.ellipsisHorizontal(),
-                content: () => settingsPanel()
+                content: settingsPanel
             }
         ]
     });
@@ -89,8 +89,34 @@ export class AppModel extends HoistAppModel {
                         ]
                     },
                     {
-                        name: 'settings',
-                        path: '/settings'
+                        name: 'search',
+                        path: '/search',
+                        children: [
+                            {
+                                name: 'member',
+                                path: '/member/:memberSlug',
+                                children: [
+                                    {
+                                        name: 'play',
+                                        path: '/:playSlug'
+                                    }
+                                ]
+                            },
+                            {
+                                name: 'meeting',
+                                path: '/meeting/:meetingSlug',
+                                children: [
+                                    {
+                                        name: 'play',
+                                        path: '/:playSlug'
+                                    }
+                                ]
+                            },
+                            {
+                                name: 'play',
+                                path: '/:playSlug'
+                            }
+                        ]
                     },
                     {
                         name: 'bookmarks',
@@ -101,6 +127,10 @@ export class AppModel extends HoistAppModel {
                                 path: '/:playSlug'
                             }
                         ]
+                    },
+                    {
+                        name: 'settings',
+                        path: '/settings'
                     }
                 ]
             }
@@ -110,6 +140,7 @@ export class AppModel extends HoistAppModel {
     override async initAsync() {
         await super.initAsync();
         await XH.installServicesAsync(ClubService);
+        await XH.installServicesAsync(SearchService);
     }
 
     override async doLoadAsync(loadSpec: LoadSpec) {

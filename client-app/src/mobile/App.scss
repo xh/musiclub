@@ -64,6 +64,11 @@
     text-transform: uppercase;
   }
 
+  .mc-search-input {
+    --xh-mobile-input-font-size-px: 18px;
+    --xh-mobile-input-height-px: 40px;
+  }
+
   //------------------------
   // List styles
   //------------------------
@@ -98,11 +103,16 @@
         }
       }
 
-      &--dateYear,
-      &--member,
       &--year {
         h1 {
           font-size: 60px;
+        }
+      }
+
+      &--member,
+      &--location {
+        h1 {
+          font-size: 40px;
         }
       }
 
