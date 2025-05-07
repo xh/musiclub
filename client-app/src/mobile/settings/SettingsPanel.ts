@@ -89,8 +89,8 @@ export const settingsPanel = hoistCmp.factory({
                                 })
                             ),
                             p(Icon.edit(), 'Meticulous record-keeping by ', strong('John W.')),
-                            p({
-                                className: 'mc-settings-panel__xh-credit',
+                            div({
+                                className: 'mc-settings-panel__about__xh-credit',
                                 items: [
                                     `App by`,
                                     span({
