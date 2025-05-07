@@ -6,10 +6,15 @@ module.exports = (env = {}) => {
         appName: 'Musiclüb',
         appVersion: '1.0-SNAPSHOT',
         favicon: './public/favicon.svg',
-        devServerOpenPage: 'app/',
+        devServerOpenPage: null,
         dupePackageCheckExcludes: ['es-abstract', 'tslib'],
-        preloadBackgroundColor: '#f7931c',
+        preloadBackgroundColor: '#ef6c00',
         reactProdMode: false,
+        manifestConfig: {
+            description:
+                'Musiclüb is an LA-based monthly music appreciation club that takes it one year at a time.',
+            orientation: 'portrait'
+        },
         ...env
     });
 };

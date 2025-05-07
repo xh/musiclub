@@ -14,6 +14,11 @@
     --mc-list-text-bg: rgba(0, 0, 0, 0.8);
   }
 
+  .xh-viewport {
+    background: url(../../public/background.svg) no-repeat center center fixed;
+    background-size: 80%;
+  }
+
   // Workaround Chrome emulation (?) bug that makes hover color sticky.
   .ag-row-hover:not(.ag-full-width-row)::before,
   .ag-row-hover.ag-full-width-row.ag-row-group::before {

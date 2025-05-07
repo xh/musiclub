@@ -4,6 +4,7 @@ import {
     faTurntable,
     faListMusic,
     faUserMusic,
+    faSquarePlus,
     faPeopleGroup
 } from '@fortawesome/pro-light-svg-icons';
 import {faTurntable as faTurntableThin} from '@fortawesome/pro-thin-svg-icons';
@@ -12,16 +13,19 @@ import {Icon} from '@xh/hoist/icon';
 
 library.add(
     faAlbum,
-    faTurntable,
-    faTurntableThin,
     faListMusic,
-    faUserMusic,
     faPeopleGroup,
     faSpotify,
+    faSquarePlus,
+    faTurntable,
+    faTurntableThin,
+    faUserMusic,
     faYoutube
 );
 
 const prefix = 'fal';
+export const addToHomescreenIcon = (opts = {}) =>
+    Icon.icon({iconName: 'square-plus', prefix, ...opts});
 export const albumIcon = (opts = {}) => Icon.icon({iconName: 'album', prefix, ...opts});
 export const artistIcon = (opts = {}) => Icon.icon({iconName: 'user-music', prefix, ...opts});
 export const clubIcon = (opts = {}) => Icon.icon({iconName: 'turntable', prefix, ...opts});

@@ -2,9 +2,26 @@
   .mc-settings-panel {
     --xh-button-height: 40px;
 
-    .xh-panel__content {
+    &__content {
+      > * {
+        margin-bottom: 10px;
+      }
+      overflow-y: auto;
       padding: var(--xh-pad-double-px);
-      gap: var(--xh-pad-double-px);
+
+      p {
+        .xh-icon {
+          margin-right: 0.5em;
+        }
+      }
+
+      ul {
+        padding-inline-start: 2em;
+
+        li:not(:first-child) {
+          margin-top: 5px;
+        }
+      }
     }
 
     &__about {
@@ -27,6 +44,11 @@
         width: 150px;
         margin: 10px auto;
       }
+    }
+
+    &__xh-credit {
+      margin-top: 15px;
+      text-align: center;
     }
   }
 }

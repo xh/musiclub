@@ -1,6 +1,9 @@
+import {PWAInstallElement} from '@khmyznikov/pwa-install';
 import {TabContainerModel} from '@xh/hoist/cmp/tab';
 import {HoistAppModel, loadAllAsync, LoadSpec, XH} from '@xh/hoist/core';
 import {Icon} from '@xh/hoist/icon';
+import {makeObservable} from '@xh/hoist/mobx';
+import {createObservableRef} from '@xh/hoist/utils/react';
 import {memberIcon} from '../core/Icons';
 import {ClubService} from '../core/services/ClubService';
 import {SearchService} from '../core/services/SearchService';
@@ -12,6 +15,9 @@ import {settingsPanel} from './settings/SettingsPanel';
 
 export class AppModel extends HoistAppModel {
     static instance: AppModel;
+
+    readonly pwaInstallRef = createObservableRef<PWAInstallElement>();
+    readonly pwaInstallDescription = `Musiclüb looks and works better when added to your phone's home screen. Give it a spin.`;
 
     tabContainerModel: TabContainerModel = new TabContainerModel({
         route: 'mobile',
@@ -48,6 +54,11 @@ export class AppModel extends HoistAppModel {
             }
         ]
     });
+
+    constructor() {
+        super();
+        makeObservable(this);
+    }
 
     override getRoutes() {
         return [
@@ -151,3 +162,18 @@ export class AppModel extends HoistAppModel {
         return false;
     }
 }
+
+/**
+ * Capture the `beforeinstallprompt` event, adding listener as early as we can to catch it, and
+ * stash for later use by pwa-installer. AppComponent renders the PWAInstall element, SettingsPanel
+ * uses the ref to show a button to trigger the dialog.
+ *
+ * Prevent default to avoid showing an automatic system prompt on Android.
+ */
+window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+    // @ts-ignore
+    window.pwaInstallEvent = e;
+});
