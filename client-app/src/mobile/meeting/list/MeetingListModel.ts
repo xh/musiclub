@@ -1,4 +1,5 @@
 import {DataViewModel} from '@xh/hoist/cmp/dataview';
+import {GridSorterLike} from '@xh/hoist/cmp/grid';
 import {
     HoistModel,
     LoadSpec,
@@ -11,7 +12,7 @@ import {
 import {StoreRecord} from '@xh/hoist/data';
 import {Icon} from '@xh/hoist/icon';
 import {NavigatorModel} from '@xh/hoist/mobile/cmp/navigator';
-import {action, bindable, makeObservable} from '@xh/hoist/mobx';
+import {action, bindable, computed, makeObservable} from '@xh/hoist/mobx';
 import {wait} from '@xh/hoist/promise';
 import {pluralize} from '@xh/hoist/utils/js';
 import {meetingGroupItem} from '../../../core/cmp/renderers/MeetingGroupItem';
@@ -40,12 +41,15 @@ export class MeetingListModel extends HoistModel {
     @bindable @persist sort: 'asc' | 'desc' = 'desc';
 
     /**
-     * Flip sort on locations so we can have our three dims use the same default sort order
-     * and yet yield desired results: we want latest meetings and years to top as they are more
-     * relevant/interesting/complete, but it would be silly to sort location desc.
+     * We need to play games with sorting to get our fake expand/collapse working properly.
+     *
+     * We also never sort parent location groups in reverse order - it's just weird - so we
+     * force the first-level (parent) sort to asc if that's our groupBy dim.
      */
-    get effectiveSort(): 'asc' | 'desc' {
-        return this.sort === 'desc' && this.dim === 'location' ? 'asc' : this.sort;
+    @computed.struct
+    get effectiveSort(): GridSorterLike[] {
+        const parentSort = this.dim === 'location' ? 'asc' : this.sort;
+        return [`sortKey|${parentSort}`, `isChild|asc`, `childSortKey|${this.sort}`];
     }
 
     get title(): string {
@@ -68,6 +72,7 @@ export class MeetingListModel extends HoistModel {
 
         this.dataViewModel = new DataViewModel({
             ...DATA_VIEW_CONF,
+            sortBy: this.effectiveSort,
             store: {
                 fields: [
                     {name: 'type', type: 'string'},
@@ -76,10 +81,10 @@ export class MeetingListModel extends HoistModel {
                     {name: 'groupId', type: 'string'},
                     {name: 'parentDim', type: 'string'},
                     {name: 'isChild', type: 'bool'},
-                    {name: 'sortKey', type: 'string'}
+                    {name: 'sortKey', type: 'string'},
+                    {name: 'childSortKey', type: 'string'}
                 ]
             },
-            sortBy: `sortKey|${this.effectiveSort}`,
             renderer: (v, {record}) => {
                 const row = record.data as RowData,
                     {type, meetingGroup, meeting, isChild, parentDim} = row;
@@ -108,9 +113,7 @@ export class MeetingListModel extends HoistModel {
             },
             {
                 track: () => this.effectiveSort,
-                run: ef => {
-                    this.dataViewModel.setSortBy(`sortKey|${ef}`);
-                }
+                run: ef => this.dataViewModel.setSortBy(ef)
             },
             {
                 track: () => [this.expandedGroups, this.lastLoadCompleted],
@@ -131,6 +134,7 @@ export class MeetingListModel extends HoistModel {
             const groups = XH.clubService.getMeetingsBy(dim);
             groups.forEach(grp => {
                 const groupId = `${grp.dimension}-${grp.id}`;
+
                 data.push(
                     {
                         type: 'meetingGroup',
@@ -138,7 +142,7 @@ export class MeetingListModel extends HoistModel {
                         id: groupId,
                         groupId,
                         isChild: false,
-                        sortKey: `[${groupId}]`
+                        sortKey: groupId
                     },
                     ...grp.meetings.map(mtg => {
                         return {
@@ -148,7 +152,8 @@ export class MeetingListModel extends HoistModel {
                             groupId: groupId,
                             parentDim: dim,
                             isChild: true,
-                            sortKey: `[${groupId}][${mtg.date}]`
+                            sortKey: groupId,
+                            childSortKey: mtg.date.toString()
                         };
                     })
                 );
@@ -227,4 +232,5 @@ interface RowData {
     parentDim?: MeetingDim;
     isChild: boolean;
     sortKey: string;
+    childSortKey?: string;
 }
