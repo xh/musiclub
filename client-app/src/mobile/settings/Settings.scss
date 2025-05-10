@@ -7,7 +7,12 @@
         margin-bottom: 10px;
       }
       overflow-y: auto;
-      padding: var(--xh-pad-double-px);
+      padding: 0 var(--xh-pad-double-px) var(--xh-pad-double-px) var(--xh-pad-double-px);
+
+      h2 {
+        color: var(--xh-orange);
+        font-weight: 400 !important;
+      }
 
       p {
         .xh-icon {
@@ -25,10 +30,7 @@
     }
 
     &__about {
-      h2 {
-        color: var(--xh-orange);
-        font-weight: 400 !important;
-      }
+      margin-top: 16px;
 
       p {
         margin: 10px 0 20px 0 !important;

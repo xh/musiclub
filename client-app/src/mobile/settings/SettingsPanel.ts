@@ -31,6 +31,7 @@ export const settingsPanel = hoistCmp.factory({
             item: div({
                 className: 'mc-settings-panel__content',
                 items: [
+                    h2('Settings'),
                     buttonGroupInput({
                         value: XH.darkTheme,
                         outlined: true,
@@ -40,7 +41,7 @@ export const settingsPanel = hoistCmp.factory({
                         ],
                         onChange: v => XH.toggleTheme()
                     }),
-                    vspacer(),
+                    vspacer(5),
                     button({
                         text: installText,
                         outlined: true,
@@ -53,7 +54,6 @@ export const settingsPanel = hoistCmp.factory({
                         item: AppModel.instance.pwaInstallDescription,
                         className: `xh-font-size-small ${pwaInstallAvailable ? '' : 'xh-text-color-muted'}`
                     }),
-                    vspacer(),
                     div({
                         className: 'mc-settings-panel__about',
                         items: [
