@@ -1,7 +1,5 @@
 import {HoistService, PlainObject, XH} from '@xh/hoist/core';
 import {Document} from 'flexsearch';
-// @ts-ignore
-import en from 'flexsearch/lang/en';
 import {isEmpty} from 'lodash';
 import {Entity} from '../Types';
 
@@ -23,9 +21,7 @@ export class SearchService extends HoistService {
                     {field: 'exactText', tokenize: 'exact'},
                     {
                         field: 'searchText',
-                        tokenize: 'forward',
-                        encoder: en,
-                        context: true
+                        preset: 'match'
                     }
                 ],
                 tag: ['type']
@@ -40,7 +36,7 @@ export class SearchService extends HoistService {
     }
 
     async searchAsync(query: string): Promise<Entity[]> {
-        const raw = (await this.index.searchAsync(query)) as PlainObject[];
+        const raw = (await this.index.searchAsync(query, {suggest: true})) as PlainObject[];
         if (isEmpty(raw)) return [];
 
         const exactMatches = raw.find(it => it.field === 'exactText'),

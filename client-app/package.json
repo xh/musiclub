@@ -9,7 +9,7 @@
     "hoistVer": "cat node_modules/@xh/hoist/package.json | grep version",
     "lint": "yarn lint:all",
     "lint:all": "yarn lint:js && yarn lint:styles",
-    "lint:js": "eslint --ext .js,.jsx,.ts,.tsx .",
+    "lint:js": "eslint .",
     "lint:styles": "stylelint \"**/*.s?(a|c)ss\"",
     "prepare": "cd .. && husky client-app/.husky",
     "start": "yarn install && cross-env NODE_OPTIONS=--max_old_space_size=3072 webpack-dev-server",
@@ -43,35 +43,34 @@
     "@ag-grid-enterprise/sparklines": "~31.2.0",
     "@fortawesome/free-brands-svg-icons": "^6.7.2",
     "@khmyznikov/pwa-install": "^0.5.5",
-    "@lit/react": "^1.0.7",
-    "@types/react": "18.x",
-    "@types/react-dom": "18.x",
-    "@xh/hoist": "73.0.0-SNAPSHOT.1746837312368",
+    "@xh/hoist": "74.0.0-SNAPSHOT.1747520457711",
     "core-js": "3.x",
     "flexsearch": "~0.8.158",
     "highcharts": "11.x",
     "lit": "^3.3.0",
+    "@lit/react": "^1.0.7",
     "lodash": "4.x",
     "moment": "2.x",
     "react": "~18.2.0",
     "react-dom": "~18.2.0"
   },
   "devDependencies": {
-    "@xh/hoist-dev-utils": "10.x",
+    "@xh/hoist-dev-utils": "11.x",
     "cross-env": "7.x",
-    "eslint": "8.x",
-    "eslint-config-prettier": "9.x",
+    "eslint": "9.x",
+    "eslint-config-prettier": "10.x",
     "husky": "9.x",
     "lint-staged": "15.x",
     "postcss": "8.x",
     "prettier": "3.x",
     "stylelint": "16.x",
-    "stylelint-config-standard-scss": "14.x",
-    "typescript": "~5.8.3"
+    "stylelint-config-standard-scss": "15.x",
+    "typescript": "^5.8.3"
   },
   "resolutions": {
     "core-js": "3.x",
     "@types/react": "18.x",
     "@types/react-dom": "18.x"
-  }
+  },
+  "packageManager": "yarn@1.22.19+sha512.ff4579ab459bb25aa7c0ff75b62acebe576f6084b36aa842971cf250a5d8c6cd3bc9420b22ce63c7f93a0857bc6ef29291db39c3e7a23aab5adfd5a4dd6c5d71"
 }

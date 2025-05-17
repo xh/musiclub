@@ -56,8 +56,6 @@ class BootStrap implements LogSupport {
             }
 
             logInfo("Local admin user available as per instanceConfig", adminUsername)
-        } else {
-            logWarn("Default admin user not created. To provide admin access, specify credentials in a musiclub.yml instance config file.")
         }
     }
 
@@ -78,7 +76,12 @@ class BootStrap implements LogSupport {
             auth0Config: [
                 groupName    : 'Musiclub',
                 valueType    : 'json',
-                defaultValue : [clientId: 'MUn9VrAGavF7n39RdhFYq8xkZkoFYEDB', domain: 'login.xh.io'],
+                defaultValue : [
+                    clientId: 'MUn9VrAGavF7n39RdhFYq8xkZkoFYEDB',
+                    domain: 'login.xh.io',
+                    authZeroClientOptions: [useCookiesForTransactions: false],
+                    reloginEnabled: true
+                ],
                 clientVisible: false,
                 note         : 'OAuth config for the app registered at the XH Auth0 account.'
             ],

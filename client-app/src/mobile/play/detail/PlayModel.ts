@@ -97,7 +97,6 @@ export class PlayModel extends HoistModel {
         }
 
         const playWithEntities = await XH.clubService.getPlayWithEntities(play.id, loadSpec);
-        console.log(playWithEntities);
         runInAction(() => (this._playWithEntities = playWithEntities));
     }
 }

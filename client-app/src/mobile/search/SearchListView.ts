@@ -17,32 +17,35 @@ export const searchListView = hoistCmp.factory({
         return panel({
             tbar: titleBar({title: 'Search'}),
             className,
+            items: [queryInput(), dataView()]
+        });
+    }
+});
+
+const queryInput = hoistCmp.factory<SearchListModel>({
+    render({model}) {
+        return hbox({
+            padding: 10,
+            gap: 10,
+            alignItems: 'center',
             items: [
-                hbox({
-                    padding: 10,
-                    gap: 10,
-                    alignItems: 'center',
-                    items: [
-                        textInput({
-                            className: 'mc-search-input',
-                            bind: 'query',
-                            autoCapitalize: 'none',
-                            commitOnChange: true,
-                            placeholder: 'Looking for...',
-                            flex: 1,
-                            ref: model.inputRef
-                        }),
-                        button({
-                            icon: Icon.x(),
-                            minimal: true,
-                            disabled: !model.query,
-                            onClick: () => {
-                                model.query = '';
-                            }
-                        })
-                    ]
+                textInput({
+                    className: 'mc-search-input',
+                    bind: 'query',
+                    autoCapitalize: 'none',
+                    commitOnChange: true,
+                    placeholder: 'Looking for...',
+                    flex: 1,
+                    ref: model.inputRef
                 }),
-                dataView()
+                button({
+                    icon: Icon.x(),
+                    minimal: true,
+                    disabled: !model.query,
+                    onClick: () => {
+                        model.query = '';
+                    }
+                })
             ]
         });
     }

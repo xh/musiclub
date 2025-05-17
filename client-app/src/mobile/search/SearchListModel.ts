@@ -69,17 +69,17 @@ export class SearchListModel extends HoistModel {
         this.addReaction(
             {
                 track: () => this.query,
-                run: () => this.refreshAsync(),
+                run: () => {
+                    this.refreshAsync();
+                },
+                debounce: 300
+            },
+            // Doesn't work on iOS (Apple doesn't allow it - must be user action)
+            {
+                track: () => this.inputRef.current,
+                run: inputModel => inputModel.focus(),
                 debounce: 300
             }
-            // I don't think this works on device - need to research...
-            // {
-            //     track: () => this.inputRef.current,
-            //     run: inputModel => {
-            //         // Hmmm, slider issues
-            //         wait(500).then(() => inputModel?.focus());
-            //     }
-            // }
         );
     }
 
