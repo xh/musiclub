@@ -18,7 +18,6 @@ export const AppComponent = hoistCmp({
         return panel({
             tbar: appBar({
                 icon: clubIcon({size: 'lg'}),
-                hideRefreshButton: true,
                 leftItems: [tabSwitcher({enableOverflow: true})],
                 appMenuButtonProps: {
                     hideFeedbackItem: true,

@@ -118,7 +118,10 @@ export class ClubService extends HoistService {
 
     override async initAsync(): Promise<void> {
         await super.initAsync();
+        await this.loadAsync();
+    }
 
+    override async doLoadAsync(loadSpec: LoadSpec): Promise<void> {
         try {
             const raw = await XH.fetchJson({url: 'meetings'});
             let meetings: Meeting[] = [],
@@ -188,7 +191,10 @@ export class ClubService extends HoistService {
                 this.logWarn(`Dropped ${rejected.length} meetings without a year`, rejected);
             }
         } catch (e) {
-            XH.handleException(e, {title: 'Error loading Musiclub data'});
+            if (!loadSpec.isAutoRefresh && !loadSpec.isStale) {
+                XH.handleException(e, {title: 'Error loading Musiclub data'});
+                throw e;
+            }
         }
     }
 
