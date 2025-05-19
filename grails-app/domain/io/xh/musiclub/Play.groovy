@@ -45,6 +45,24 @@ class Play implements JSONFormat {
 
     static belongsTo = [meeting: Meeting]
 
+    /**
+     * Setter to manage initial Meeting assignment and (unlikely) )updates.
+     * Required to ensure the parent Meeting knows about our Play.
+     */
+    void setMeeting(Meeting newMeeting) {
+        Meeting oldMeeting = this.meeting
+
+        if (oldMeeting && oldMeeting.id != newMeeting?.id) {
+            oldMeeting.removeFromPlays(this)
+        }
+
+        this.@meeting = newMeeting
+
+        if (newMeeting) {
+            newMeeting.addToPlays(this)
+        }
+    }
+
     static constraints = {
         slug blank: false, maxSize: 20
         member nullable: true

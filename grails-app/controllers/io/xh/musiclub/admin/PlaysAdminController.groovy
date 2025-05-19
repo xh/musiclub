@@ -64,6 +64,7 @@ class PlaysAdminController extends RestController {
     }
 
     protected void preprocessSubmit(Map submit) {
+        if (submit.meetingId) submit.meeting = Meeting.get(submit.meetingId)
         if (submit.artistMbId) musicBrainzService.ensureArtistCreated(submit.artistMbId as String)
         if (submit.releaseGroupMbId) musicBrainzService.ensureReleaseGroupCreated(submit.releaseGroupMbId as String)
         if (submit.releaseMbId) musicBrainzService.ensureReleaseCreated(submit.releaseMbId as String)

@@ -74,7 +74,7 @@ class SongPlayRestGridModel extends HoistModel {
                         recordingMb = this.lookupVal(raw, 'recordingMbId');
                     return {
                         ...raw,
-                        meeting: raw.meeting.id,
+                        meetingId: raw.meeting.id,
                         artistMb,
                         artistMatch: raw.artist && raw.artist === artistMb,
                         releaseGroupMb,
@@ -86,7 +86,7 @@ class SongPlayRestGridModel extends HoistModel {
                 },
                 fields: [
                     {name: 'slug', type: 'string', required: true},
-                    {name: 'meeting', lookupName: 'meetings', type: 'number'},
+                    {name: 'meetingId', lookupName: 'meetings', type: 'number'},
                     {
                         name: 'member',
                         type: 'string',
@@ -154,7 +154,7 @@ class SongPlayRestGridModel extends HoistModel {
             colDefaults: {autosizeMaxWidth: 350, filterable: true},
             columns: [
                 {field: 'slug', align: 'right', width: 80},
-                {field: 'meeting', ...lookupCol},
+                {field: 'meetingId', ...lookupCol},
                 {field: 'member'},
                 {
                     field: 'bonus',
@@ -186,7 +186,7 @@ class SongPlayRestGridModel extends HoistModel {
             ],
             editors: [
                 {field: 'slug'},
-                {field: 'meeting'},
+                {field: 'meetingId'},
                 {field: 'member'},
                 {field: 'bonus'},
                 {field: 'mbStatus'},
@@ -211,8 +211,8 @@ class SongPlayRestGridModel extends HoistModel {
                 '-',
                 this.enhancePlayAction,
                 this.reEnhancePlayAction,
-                '-',
                 this.addCoverArtAction,
+                '-',
                 this.acceptMbEntitiesAction,
                 '-',
                 this.markAsMismatchAction,
@@ -281,7 +281,7 @@ class SongPlayRestGridModel extends HoistModel {
         tooltip:
             'Lookup the release / release-group in the Cover Art Archive and set full size and thumbnail URLs',
         icon: albumIcon(),
-        intent: 'success',
+        intent: 'primary',
         recordsRequired: true,
         actionFn: ({selectedRecords}) => {
             this.addCoverArt(selectedRecords.map(it => it.id as number));
