@@ -32,8 +32,7 @@ export const AppComponent = hoistCmp({
                     ]
                 }
             }),
-            item: tabContainer(),
-            mask: 'onLoad'
+            item: tabContainer()
         });
     }
 });

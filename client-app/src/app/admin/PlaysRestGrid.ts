@@ -31,13 +31,17 @@ export const playsRestGrid = hoistCmp.factory({
                 recordActionBar({
                     selModel,
                     gridModel,
-                    actions: [model.enhancePlayAction, model.reEnhancePlayAction]
+                    actions: [
+                        model.enhancePlayAction,
+                        model.reEnhancePlayAction,
+                        model.addCoverArtAction
+                    ]
                 }),
                 '-',
                 recordActionBar({
                     selModel,
                     gridModel,
-                    actions: [model.addCoverArtAction, model.acceptMbEntitiesAction]
+                    actions: [model.acceptMbEntitiesAction]
                 }),
                 '-',
                 recordActionBar({
@@ -45,8 +49,7 @@ export const playsRestGrid = hoistCmp.factory({
                     gridModel,
                     actions: [model.markAsMismatchAction, model.markAsMismatchKeepArtistAction]
                 })
-            ),
-            mask: 'onLoad'
+            )
         });
     }
 });

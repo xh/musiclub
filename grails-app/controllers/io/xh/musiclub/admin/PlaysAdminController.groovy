@@ -47,6 +47,16 @@ class PlaysAdminController extends RestController {
         renderJSON(musicBrainzService.addCoverArt(ids))
     }
 
+    protected void doCreate(Object obj, Object data) {
+        super.doCreate(obj, data)
+
+        try {
+            musicBrainzService.enhancePlay(obj.id)
+        } catch (e) {
+            logError("Error enhancing play post-create ${obj.id}", e)
+        }
+    }
+
     def lookupData() {
         def entityLookups = getAllEntityLookups()
 
