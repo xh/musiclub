@@ -18,7 +18,7 @@ export const meetingItem = hoistCmp.factory<MeetingItemProps>({
             count = plays.filter(it => !it.bonus).length,
             bonusCount = plays.length - count;
 
-        let title = `#${meeting.slug} - `,
+        let title = `#${meeting.number} - `,
             subtitle = null;
         if (parentDim === 'year') {
             title += meeting.date;

@@ -7,6 +7,8 @@ import io.xh.hoist.pref.PrefService
 import io.xh.musiclub.security.RoleService
 import io.xh.musiclub.security.User
 
+import java.time.format.DateTimeFormatter
+
 import static io.xh.hoist.BaseService.parallelInit
 import static io.xh.hoist.util.InstanceConfigUtils.getInstanceConfig
 import static io.xh.hoist.util.Utils.*
@@ -30,6 +32,8 @@ class BootStrap implements LogSupport {
             it.class.canonicalName.startsWith(this.class.package.name)
         }
         parallelInit(services)
+
+        fixupSlugs()
     }
 
     def destroy = {}
@@ -113,5 +117,33 @@ class BootStrap implements LogSupport {
                 roles   : ['HOIST_ADMIN']
             ]
         ])
+    }
+
+    // Temp routine to make Meeting and Play slugs more scalable.
+    // Convert current idx order meeting slug to the ISO date of the meeting no dashes - so meeting 1 -> 20200412
+    // Convert play slug from current [meeting-slug]-[playIdx] format to a) use new meeting slug
+    // above and b) take play order from 1, 2, 3, 4... to 01, 02, 03, 04... so they sort OK
+    // when under 99 plays (which is always)
+    @Transactional
+    private void fixupSlugs() {
+        Meeting.list().each { meeting ->
+            def newSlug = meeting.date.format(DateTimeFormatter.ofPattern('yyyyMMdd'))
+            if (meeting.slug != newSlug) {
+                logInfo("Updating meeting slug from ${meeting.slug} to $newSlug")
+                meeting.slug = newSlug
+                meeting.save(flush: true)
+            }
+        }
+
+        Play.list().each { play ->
+            def idxPart = play.slug.split('-')[1],
+                newSlug = "${play.meeting.slug}-${idxPart.padLeft(2, '0')}"
+
+            if (play.slug != newSlug) {
+                logInfo("Updating play slug from ${play.slug} to $newSlug")
+                play.slug = newSlug
+                play.save(flush: true)
+            }
+        }
     }
 }

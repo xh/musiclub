@@ -31,7 +31,7 @@ const modelSpec: RestGridConfig = {
         }
     },
     unit: 'meeting',
-    sortBy: 'date',
+    sortBy: 'slug',
     columns: [
         {field: 'slug', align: 'right', width: 80},
         {field: 'location'},

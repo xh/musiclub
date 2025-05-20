@@ -30,6 +30,7 @@ export interface Meeting extends Entity {
     type: 'meeting';
     id: number;
     name: string;
+    number: number;
     date: LocalDate;
     dateYear: number;
     year: string;

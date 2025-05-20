@@ -123,14 +123,17 @@ export class ClubService extends HoistService {
 
     override async doLoadAsync(loadSpec: LoadSpec): Promise<void> {
         try {
-            const raw = await XH.fetchJson({url: 'meetings'});
-            let meetings: Meeting[] = [],
+            let raw = await XH.fetchJson({url: 'meetings'}),
+                meetings: Meeting[] = [],
                 plays: Play[] = [],
                 rejected = [];
 
-            raw.map(it => {
+            // Ensure sorted by date to get the number right.
+            raw = sortBy(raw, 'date');
+
+            raw.map((it, idx) => {
                 try {
-                    const mtg = this.processRawMeeting(it);
+                    const mtg = this.processRawMeeting(it, idx + 1);
                     if (mtg.year) {
                         meetings.push(mtg);
                         plays.push(...mtg.plays);
@@ -201,13 +204,14 @@ export class ClubService extends HoistService {
     //------------------
     // Implementation
     //------------------
-    private processRawMeeting(raw: PlainObject): Meeting {
+    private processRawMeeting(raw: PlainObject, number: number): Meeting {
         const date = LocalDate.get(raw.date);
         return {
             type: 'meeting',
             id: raw.id,
             slug: raw.slug,
-            name: `#${raw.slug} - ${raw.year}`,
+            number,
+            name: `#${number} - ${raw.year}`,
             date,
             dateYear: date ? parseInt(date.format('YYYY')) : null,
             year: raw.year,
