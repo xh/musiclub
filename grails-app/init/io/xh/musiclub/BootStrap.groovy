@@ -34,31 +34,6 @@ class BootStrap implements LogSupport {
 
     def destroy = {}
 
-    //------------------------
-    // Implementation
-    //------------------------
-    @Transactional
-    private void createLocalAdminUserIfNeeded() {
-        String adminUsername = getInstanceConfig('bootstrapAdminUser')
-        String adminPassword = getInstanceConfig('bootstrapAdminPassword')
-        if (adminUsername && adminPassword) {
-            def user = User.findByEmail(adminUsername)
-            if (!user) {
-                new User(
-                    email: adminUsername,
-                    password: adminPassword,
-                    name: 'Musiclüb Admin',
-                    profilePicUrl: 'https://xh.io/images/toolbox-admin-profile-pic.png'
-                ).save(flush: true)
-            } else if (!user.checkPassword(adminPassword)) {
-                user.password = adminPassword
-                user.save(flush: true)
-            }
-
-            logInfo("Local admin user available as per instanceConfig", adminUsername)
-        }
-    }
-
     private void logStartupMsg() {
         def buildLabel = appBuild != 'UNKNOWN' ? " [build $appBuild] " : " "
 
@@ -113,6 +88,28 @@ class BootStrap implements LogSupport {
                 roles   : ['HOIST_ADMIN']
             ]
         ])
+    }
+
+    @Transactional
+    private void createLocalAdminUserIfNeeded() {
+        String adminUsername = getInstanceConfig('bootstrapAdminUser')
+        String adminPassword = getInstanceConfig('bootstrapAdminPassword')
+        if (adminUsername && adminPassword) {
+            def user = User.findByEmail(adminUsername)
+            if (!user) {
+                new User(
+                    email: adminUsername,
+                    password: adminPassword,
+                    name: 'Musiclüb Admin',
+                    profilePicUrl: 'https://xh.io/images/toolbox-admin-profile-pic.png'
+                ).save(flush: true)
+            } else if (!user.checkPassword(adminPassword)) {
+                user.password = adminPassword
+                user.save(flush: true)
+            }
+
+            logInfo("Local admin user available as per instanceConfig", adminUsername)
+        }
     }
 
 }
